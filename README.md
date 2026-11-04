@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # 🍕 Vero Italiano
 
 Website for **Vero Italiano**, an Italian pizzeria in Mghar.
@@ -83,3 +84,7 @@ The site runs on port 80 (set `WEB_PORT` to change it). Open the port in the Ora
 - **Map:** in Google Maps, go to Share → Embed a map → Copy HTML, then paste it in Admin → Settings.
 - **WhatsApp number** uses international format without `+`: `972509780855`.
 - **Admin login** is limited to 10 attempts every 15 minutes. There is no sign-up page; the only account is the one created from `.env`.
+=======
+# VeroItaliano
+Vero Italiano pizzeria website (Mghar) in Hebrew &amp; Arabic (RTL): pizza gallery with photos, how each pizza is made, prices, opening hours, phone orders ,and Google Maps location. Owner-only admin panel to edit prices, hours, discounts/specials and the full menu.
+>>>>>>> d9173bba3fb270535c628a542006673d23978024
