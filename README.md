@@ -1,7 +1,6 @@
-<<<<<<< HEAD
 # 🍕 Vero Italiano
 
-Website for **Vero Italiano**, an Italian pizzeria in Mghar.
+Website for **Vero Italiano**, an Italian pizzeria in Maghar.
 The site is in **Hebrew (default) and Arabic**, fully RTL. Orders come in by phone or WhatsApp.
 
 ## ✨ Features
