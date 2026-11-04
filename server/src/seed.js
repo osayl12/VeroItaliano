@@ -25,11 +25,35 @@ export async function ensureAdmin() {
 
 const t = (he, ar) => ({ he, ar });
 
-// Real menu from the shop's ordering app (Nov 2026). Descriptions are left empty on purpose:
-// the owner fills them in /admin. Arabic names are translations - the owner should check them.
-const item = (category, he, ar, price, { img, ...extra } = {}) => ({
-  category, name: t(he, ar), description: t('', ''), howMade: t('', ''), price, img, ...extra
+// Real menu from the shop's ordering app (Nov 2026): names, prices, descriptions and choices.
+// Arabic texts are translations - the owner should check them in /admin.
+const item = (category, he, ar, price, { img, desc, groups, ...extra } = {}) => ({
+  category,
+  name: t(he, ar),
+  description: desc ? t(desc[0], desc[1]) : t('', ''),
+  howMade: t('', ''),
+  price,
+  img,
+  optionGroups: groups || [],
+  ...extra
 });
+
+// ----- option groups (same as the shop's app) -----
+const opt = ([he, ar], price = 0) => ({ name: t(he, ar), price });
+const group = (he, ar, min, max, options) => ({ name: t(he, ar), min, max, options });
+const TOPPINGS = [
+  ['תירס', 'ذرة'], ['זיתים', 'زيتون'], ['פטריות', 'فطر'], ['בצל', 'بصل'], ['עגבניות', 'بندورة'],
+  ['חלפיניו', 'هالبينو'], ['פפרוני', 'بيبروني'], ['טונה', 'تونة'], ['גמבה', 'فليفلة']
+];
+const TOPPINGS_NO_CORN_OLIVES = TOPPINGS.filter(([he]) => he !== 'תירס' && he !== 'זיתים' && he !== 'עגבניות');
+const DRINKS = [['קוקה קולה', 'كوكا كولا'], ['קוקה קולה זירו', 'كوكا كولا زيرو'], ['פנטה אקזוטי', 'فانتا إكزوتيك'], ['פנטה תות', 'فانتا فراولة']];
+const drinkRequired = () => group('בחר את המשקה', 'اختر المشروب', 1, 1, DRINKS.map((d) => opt(d)));
+const drinkExtra = () => group('הוספת משקה', 'إضافة مشروب', 0, 1, DRINKS.map((d) => opt(d, 5)));
+const half = (n, max = 3, list = TOPPINGS) =>
+  n === 1
+    ? group('החצי הראשון', 'النصف الأول', 0, max, list.map((x) => opt(x)))
+    : group('החצי השני', 'النصف الثاني', 0, max, list.map((x) => opt(x)));
+const halves = (max, list) => [half(1, max, list), half(2, max, list)];
 
 // Copies the shop's real product photos (server/seed-images) into the uploads folder
 const SEED_IMG_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'seed-images');
@@ -42,24 +66,63 @@ function seedImage(name) {
   return `/uploads/${file}`;
 }
 const SAMPLE_MENU = [
-  item('pizza', 'פיצה מרגריטה', 'بيتزا مارغريتا', 77, { featured: true, img: 'margherita' }),
-  item('pizza', 'פיצה קלאסית', 'بيتزا كلاسيك', 77, { img: 'classic' }),
-  item('pizza', 'פיצה פסטו', 'بيتزا بيستو', 77, { img: 'pesto' }),
+  item('pizza', 'פיצה מרגריטה', 'بيتزا مارغريتا', 77, {
+    featured: true, img: 'margherita',
+    desc: ['פיצה עם 4 סוגי גבינה (גאודה, מוצרלה, פרמזן ופטה), שמן זית ובזיליקום, עם משקה לבחירה', 'بيتزا مع 4 أنواع جبنة (غاودا، موزاريلا، بارميزان وفيتا)، زيت زيتون وريحان، مع مشروب حسب الاختيار'],
+    groups: [drinkRequired()]
+  }),
+  item('pizza', 'פיצה קלאסית', 'بيتزا كلاسيك', 77, {
+    img: 'classic',
+    desc: ['פיצה עם תוספות לבחירתך ומשקה', 'بيتزا مع إضافات حسب اختيارك ومشروب'],
+    groups: [drinkRequired(), ...halves(3)]
+  }),
+  item('pizza', 'פיצה פסטו', 'بيتزا بيستو', 77, {
+    img: 'pesto',
+    desc: ['פיצה ברוטב פסטו עם זיתים, תירס ועגבניות, ומשקה לבחירה', 'بيتزا بصلصة البيستو مع زيتون، ذرة وبندورة، ومشروب حسب الاختيار'],
+    groups: [drinkRequired(), ...halves(1, TOPPINGS_NO_CORN_OLIVES)]
+  }),
   item('pizza', 'פיצה ביאנקה', 'بيتزا بيانكا', 77, { available: false }),
-  item('pizza', 'פיצה סטלה', 'بيتزا ستيلا', 88, { img: 'stella' }),
+  item('pizza', 'פיצה סטלה', 'بيتزا ستيلا', 88, {
+    img: 'stella',
+    desc: ['פיצה בצורת כוכב עם קראסט ממולא בגבינה ופסטו, עם תוספות ומשקה לבחירה', 'بيتزا على شكل نجمة مع أطراف محشوة بالجبنة والبيستو، مع إضافات ومشروب حسب الاختيار'],
+    groups: [drinkRequired(), ...halves(3)]
+  }),
   item('pizza', 'ולקאנו איתלינו', 'فولكانو إيطاليانو', 88, { available: false }),
-  item('pizza', 'פיצה בצק איטלקי מטוגן', 'بيتزا عجينة إيطالية مقلية', 30, { img: 'fried-dough' }),
-  item('combos', 'פיצה משפחתית + לחם שום', 'بيتزا عائلية + خبز بالثوم', 150, { img: 'combo-garlic-bread' }),
-  item('combos', 'פיצה משפחתית + מטוגנים ומשקה', 'بيتزا عائلية + مقليات ومشروب', 121, { img: 'combo-fries-drink' }),
-  item('combos', 'פיצה משפחתית + מיקס מטוגנים ומשקה', 'بيتزا عائلية + ميكس مقليات ومشروب', 154, { img: 'combo-mix-drink' }),
-  item('focaccia', 'פוקאצ׳ה אליו', 'فوكاتشا أليو', 55, { img: 'focaccia-alio' }),
+  item('pizza', 'פיצה בצק איטלקי מטוגן', 'بيتزا عجينة إيطالية مقلية', 30, {
+    img: 'fried-dough',
+    desc: ['פיצה אישית עם תוספות לבחירה', 'بيتزا شخصية مع إضافات حسب الاختيار'],
+    groups: [group('בחר את התוספות', 'اختر الإضافات', 0, 3, TOPPINGS.map((x) => opt(x)))]
+  }),
+  item('combos', 'פיצה משפחתית + לחם שום', 'بيتزا عائلية + خبز بالثوم', 150, {
+    img: 'combo-garlic-bread',
+    desc: ['לחם שום עם פיצה קלאסית, טבעות בצל + כדורי פירה, 20 יחידות', 'خبز بالثوم مع بيتزا كلاسيك، حلقات بصل + كرات بطاطا، 20 قطعة'],
+    groups: [...halves(3), drinkExtra()]
+  }),
+  item('combos', 'פיצה משפחתית + מטוגנים ומשקה', 'بيتزا عائلية + مقليات ومشروب', 121, {
+    img: 'combo-fries-drink',
+    desc: ['פיצה משפחתית עם תוספות לבחירה, עם כדורי פירה וטבעות בצל + משקה לבחירה', 'بيتزا عائلية مع إضافات حسب الاختيار، مع كرات بطاطا وحلقات بصل + مشروب حسب الاختيار'],
+    groups: [drinkRequired(), ...halves(3)]
+  }),
+  item('combos', 'פיצה משפחתית + מיקס מטוגנים ומשקה', 'بيتزا عائلية + ميكس مقليات ومشروب', 154, {
+    img: 'combo-mix-drink',
+    desc: ['פיצה משפחתית + שניצלונים + פוטטו + כדורי פירה + מקלות גבינה + טבעות בצל', 'بيتزا عائلية + قطع شنيتسل + بوتيتو + كرات بطاطا + أصابع جبنة + حلقات بصل'],
+    groups: [drinkRequired(), ...halves(3)]
+  }),
+  item('focaccia', 'פוקאצ׳ה אליו', 'فوكاتشا أليو', 55, {
+    img: 'focaccia-alio',
+    desc: ['בצל, עגבניות, שום, זעתר ואורגנו. המרכיבים קבועים (לא ניתן לשנותם)', 'بصل، بندورة، ثوم، زعتر وأوريغانو. المكونات ثابتة (لا يمكن تغييرها)'],
+    groups: [group('תוספות', 'إضافات', 0, 1, [opt(['חריף', 'حار'])])]
+  }),
   item('starters', 'כדורי פירה', 'كرات بطاطا مهروسة', 15, { img: 'potato-balls' }),
   item('starters', 'פוטטו', 'بوتيتو', 15, { img: 'potato-wedges' }),
   item('starters', 'סלט פטוש', 'سلطة فتوش', 55, { available: false }),
   item('starters', 'טבעות בצל', 'حلقات بصل', 15, { available: false }),
   item('starters', 'מקלות גבינת מוצרלה', 'أصابع جبنة موزاريلا', 30, { img: 'mozzarella-sticks' }),
   item('starters', 'שניצלונים', 'قطع شنيتسل', 33, { img: 'schnitzels' }),
-  item('starters', 'מיקס מטוגנים', 'ميكس مقليات', 70, { img: 'fried-mix' }),
+  item('starters', 'מיקס מטוגנים', 'ميكس مقليات', 70, {
+    img: 'fried-mix',
+    desc: ['שניצלונים + פוטטו + כדורי פירה + מקלות גבינה + טבעות בצל וגם רוטב צ׳דר בצד', 'قطع شنيتسل + بوتيتو + كرات بطاطا + أصابع جبنة + حلقات بصل مع صلصة شيدر على الجنب']
+  }),
   item('drinks', 'קוקה קולה 1.5 ליטר', 'كوكا كولا 1.5 لتر', 11, { img: 'coca-cola' }),
   item('drinks', 'קוקה קולה זירו 1.5 ליטר', 'كوكا كولا زيرو 1.5 لتر', 11, { img: 'coca-cola-zero' }),
   item('drinks', 'פנטה אקזוטית 1.5 ליטר', 'فانتا إكزوتيك 1.5 لتر', 11, { img: 'fanta-exotic' }),
@@ -73,7 +136,7 @@ export async function seedIfEmpty() {
   const now = new Date();
   await Deal.create({
     title: t('פיצה משפחתית + מטוגנים ומשקה', 'بيتزا عائلية + مقليات ومشروب'),
-    description: t('דוגמה למבצע מתוזמן – לעריכה או מחיקה בפאנל הניהול', 'مثال لعرض مؤقت – للتعديل أو الحذف في لوحة التحكم'),
+    description: t('דוגמה למבצע מתוזמן. אפשר לערוך או למחוק בפאנל הניהול', 'مثال لعرض مؤقت. يمكن تعديله أو حذفه في لوحة التحكم'),
     price: 121,
     startAt: now,
     endAt: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),

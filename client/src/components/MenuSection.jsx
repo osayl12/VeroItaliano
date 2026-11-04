@@ -12,18 +12,19 @@ function SaleBadge({ inline }) {
   return <span className={`sale-badge ${inline ? 'inline' : ''}`}><Icon name="tag" size={14} /> {t('on_sale')}</span>;
 }
 
-function MenuCard({ item, onSale, settings, onAdd }) {
+function MenuCard({ item, onSale, settings, onAdd, onOpen }) {
   const { t, tr } = useLang();
   const price = finalPrice(item);
   const msg = `${tr(settings.whatsappGreeting)}\n• ${tr(item.name)} (${money(price)})`;
   const big = BIG.has(item.category) || !!item.image; // photo card whenever there is a photo
   const sale = onSale || hasSale(item);
   const off = item.available === false; // shown, but greyed out and not orderable
+  const hasOptions = (item.optionGroups || []).length > 0; // drink / toppings to choose -> open the details panel
 
   return (
     <article className={`menu-card ${big ? 'menu-card-big' : 'menu-card-small'} ${off ? 'is-unavailable' : ''}`}>
       {big && (
-        <div className="menu-img">
+        <button type="button" className="menu-img" onClick={() => onOpen(item)} aria-label={`${t('details')}: ${tr(item.name)}`}>
           {item.image ? (
             <img src={item.image} alt={tr(item.name)} loading="lazy" decoding="async" />
           ) : (
@@ -31,7 +32,7 @@ function MenuCard({ item, onSale, settings, onAdd }) {
           )}
           {sale && !off && <SaleBadge />}
           {off && <span className="unavailable-badge">{t('unavailable')}</span>}
-        </div>
+        </button>
       )}
       <div className="menu-body">
         <div className="menu-head">
@@ -54,6 +55,13 @@ function MenuCard({ item, onSale, settings, onAdd }) {
         {off ? (
           !big && <p className="unavailable-text">{t('unavailable')}</p>
         ) : (
+        hasOptions ? (
+        <div className="card-actions">
+          <button type="button" className="btn btn-outline btn-sm" onClick={() => onOpen(item)} aria-label={`${t('choose_and_add')}: ${tr(item.name)}`}>
+            <Icon name="sliders" size={16} /> {t('choose_and_add')}
+          </button>
+        </div>
+        ) : (
         <div className="card-actions">
           <a className="btn btn-wa btn-sm" href={waLink(settings.whatsapp, msg)} target="_blank" rel="noopener noreferrer" aria-label={`${t('order_whatsapp')}: ${tr(item.name)}`}>
             <WhatsAppIcon size={16} /> {t('whatsapp')}
@@ -67,13 +75,13 @@ function MenuCard({ item, onSale, settings, onAdd }) {
             <Icon name="plus" size={16} /> {t('add')}
           </button>
         </div>
-        )}
+        ))}
       </div>
     </article>
   );
 }
 
-export default function MenuSection({ menu, settings, dealItemIds, onAdd }) {
+export default function MenuSection({ menu, settings, dealItemIds, onAdd, onOpen }) {
   const { t } = useLang();
   const [active, setActive] = useState('all');
 
@@ -101,7 +109,7 @@ export default function MenuSection({ menu, settings, dealItemIds, onAdd }) {
             <h3 className="group-title">{t(`cat_${g.cat}`)}</h3>
             <div className={BIG.has(g.cat) || g.items.some((i) => i.image) ? 'menu-grid' : 'menu-list'}>
               {g.items.map((item) => (
-                <MenuCard key={item._id} item={item} settings={settings} onSale={dealItemIds.has(String(item._id))} onAdd={onAdd} />
+                <MenuCard key={item._id} item={item} settings={settings} onSale={dealItemIds.has(String(item._id))} onAdd={onAdd} onOpen={onOpen} />
               ))}
             </div>
           </div>

@@ -5,10 +5,11 @@ import Icon from '../../components/Icon.jsx';
 import { money, hasSale } from '../../utils.js';
 import { CATEGORIES } from '../../components/MenuSection.jsx';
 import { BiInput, ImagePicker, Toast, useToast } from './fields.jsx';
+import OptionGroupsEditor from './OptionGroupsEditor.jsx';
 
 const EMPTY = {
   name: { he: '', ar: '' }, description: { he: '', ar: '' }, howMade: { he: '', ar: '' },
-  category: 'pizza', price: '', salePrice: '', image: '', active: true, available: true, featured: false, order: 0
+  category: 'pizza', price: '', salePrice: '', image: '', active: true, available: true, featured: false, optionGroups: [], order: 0
 };
 
 function ItemForm({ item, onSaved, onCancel }) {
@@ -55,6 +56,7 @@ function ItemForm({ item, onSaved, onCancel }) {
       </div>
       <BiInput label={t('description')} value={f.description} onChange={set('description')} textarea />
       <BiInput label={t('how_made_field')} value={f.howMade} onChange={set('howMade')} textarea />
+      <OptionGroupsEditor value={f.optionGroups || []} onChange={set('optionGroups')} />
       <ImagePicker current={f.image} file={file} removed={removed} onChange={(fl, rm) => { setFile(fl); setRemoved(rm); }} />
       <div className="row">
         <label className="check"><input type="checkbox" checked={f.active} onChange={(e) => set('active')(e.target.checked)} /> {t('active')}</label>

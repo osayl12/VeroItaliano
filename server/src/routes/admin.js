@@ -25,7 +25,7 @@ function parseBody(req) {
 }
 
 const pick = (obj, keys) => Object.fromEntries(keys.filter((k) => k in obj).map((k) => [k, obj[k]]));
-const MENU_FIELDS = ['name', 'description', 'howMade', 'category', 'price', 'salePrice', 'image', 'active', 'available', 'featured', 'order'];
+const MENU_FIELDS = ['name', 'description', 'howMade', 'category', 'price', 'salePrice', 'image', 'active', 'available', 'featured', 'optionGroups', 'order'];
 const DEAL_FIELDS = ['title', 'description', 'image', 'price', 'originalPrice', 'startAt', 'endAt', 'items', 'active'];
 
 // Generic CRUD for menu items and deals

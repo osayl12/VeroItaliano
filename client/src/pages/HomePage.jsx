@@ -9,6 +9,7 @@ import HoursSection from '../components/HoursSection.jsx';
 import LocationSection from '../components/LocationSection.jsx';
 import Footer from '../components/Footer.jsx';
 import CartDrawer from '../components/CartDrawer.jsx';
+import ItemSheet from '../components/ItemSheet.jsx';
 import WhatsAppIcon from '../components/WhatsAppIcon.jsx';
 import Icon from '../components/Icon.jsx';
 import { telLink, waLink } from '../utils.js';
@@ -41,6 +42,7 @@ export default function HomePage() {
   const [error, setError] = useState(false);
   const [cart, setCart] = useState(loadCart);
   const [cartOpen, setCartOpen] = useState(false);
+  const [sheetItem, setSheetItem] = useState(null); // item whose details/choices panel is open
 
   const load = useCallback(() => {
     api.site().then((d) => { setData(d); setError(false); }).catch(() => setError(true));
@@ -58,14 +60,16 @@ export default function HomePage() {
     } catch {}
   }, [cart]);
 
-  // cart entry: { key, kind: 'item'|'deal', id, name:{he,ar}, price, qty }
+  // cart entry: { key, kind: 'item'|'deal', id, name:{he,ar}, price (incl. options), qty, options?: [{ group:{he,ar}, items:[{ name:{he,ar}, price }] }] }
   const addToCart = (entry) => {
+    const add = entry.qty || 1;
     setCart((c) => {
       const found = c.find((x) => x.key === entry.key);
-      if (found) return c.map((x) => (x.key === entry.key ? { ...x, qty: x.qty + 1 } : x));
-      return [...c, { ...entry, qty: 1 }];
+      if (found) return c.map((x) => (x.key === entry.key ? { ...x, qty: x.qty + add } : x));
+      return [...c, { ...entry, qty: add }];
     });
   };
+  const closeSheet = useCallback(() => setSheetItem(null), []);
   const setQty = (key, qty) => setCart((c) => (qty <= 0 ? c.filter((x) => x.key !== key) : c.map((x) => (x.key === key ? { ...x, qty } : x))));
   const closeCart = useCallback(() => setCartOpen(false), []);
   const cartCount = cart.reduce((s, x) => s + x.qty, 0);
@@ -93,7 +97,7 @@ export default function HomePage() {
       <main id="main" tabIndex={-1}>
         <Hero settings={settings} />
         <DealsSection deals={deals} settings={settings} onAdd={addToCart} onExpire={load} />
-        <MenuSection menu={menu} settings={settings} dealItemIds={dealItemIds} onAdd={addToCart} />
+        <MenuSection menu={menu} settings={settings} dealItemIds={dealItemIds} onAdd={addToCart} onOpen={setSheetItem} />
         <HoursSection settings={settings} />
         <LocationSection settings={settings} />
       </main>
@@ -121,6 +125,7 @@ export default function HomePage() {
         </button>
       </nav>
 
+      {sheetItem && <ItemSheet item={sheetItem} onClose={closeSheet} onAdd={addToCart} settings={settings} />}
       <CartDrawer open={cartOpen} onClose={closeCart} cart={cart} setQty={setQty} clear={() => setCart([])} settings={settings} />
     </>
   );
