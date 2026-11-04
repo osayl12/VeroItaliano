@@ -86,5 +86,5 @@ The site runs on port 80 (set `WEB_PORT` to change it). Open the port in the Ora
   ⚠️ `--reset` deletes the current menu and deals. Arabic names are translations that the owner should check.
 - **Not available now:** in `/admin` → Menu, untick "available now" to grey an item out without hiding it. "Featured pizza" picks the pizza for the landing page.
 - **Map:** in Google Maps, go to Share → Embed a map → Copy HTML, then paste it in Admin → Settings.
-- **WhatsApp number** uses international format without `+`: `972509780855`.
+- **WhatsApp number** uses international format without `+`.
 - **Admin login** is limited to 10 attempts every 15 minutes. There is no sign-up page; the only account is the one created from `.env`.
