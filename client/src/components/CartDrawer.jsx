@@ -47,7 +47,9 @@ export default function CartDrawer({ open, onClose, cart, setQty, clear, setting
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
-  const mapsUrl = loc ? `https://maps.google.com/?q=${loc.lat},${loc.lng}` : '';
+  // official links that open the Google Maps / Waze app on the phone (browser if the app isn't installed)
+  const mapsUrl = loc ? `https://www.google.com/maps/search/?api=1&query=${loc.lat},${loc.lng}` : '';
+  const wazeUrl = loc ? `https://waze.com/ul?ll=${loc.lat},${loc.lng}&navigate=yes` : '';
 
   // Delivery needs either the exact location or a written address
   const deliveryMissing = mode === 'delivery' && !loc && !address.trim();
@@ -64,7 +66,9 @@ export default function CartDrawer({ open, onClose, cart, setQty, clear, setting
       ? [
           `🛵 ${t('msg_delivery_title')}`,
           address.trim() ? `${t('msg_address')}: ${address.trim()}` : null,
-          loc ? `📍 ${t('msg_location')}: ${mapsUrl}` : null
+          loc ? `📍 ${t('msg_location')}:` : null,
+          loc ? `Google Maps: ${mapsUrl}` : null,
+          loc ? `Waze: ${wazeUrl}` : null
         ]
       : [t('msg_pickup')]),
     notes ? `${t('msg_notes')}: ${notes}` : null

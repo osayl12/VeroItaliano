@@ -134,10 +134,9 @@ export async function seedIfEmpty() {
   if (await MenuItem.countDocuments()) return;
   const items = await MenuItem.insertMany(SAMPLE_MENU.map(({ img, ...m }, i) => ({ ...m, image: seedImage(img), order: i })));
   const now = new Date();
+  // linked to the menu item: name, description, image and choices come from it automatically
   await Deal.create({
-    title: t('פיצה משפחתית + מטוגנים ומשקה', 'بيتزا عائلية + مقليات ومشروب'),
-    description: t('דוגמה למבצע מתוזמן. אפשר לערוך או למחוק בפאנל הניהול', 'مثال لعرض مؤقت. يمكن تعديله أو حذفه في لوحة التحكم'),
-    price: 121,
+    price: 109,
     startAt: now,
     endAt: new Date(now.getTime() + 3 * 24 * 60 * 60 * 1000),
     items: [items.find((i) => i.category === 'combos' && i.price === 121)._id]

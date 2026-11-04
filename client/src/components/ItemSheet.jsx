@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLang } from '../i18n.jsx';
-import { finalPrice, hasSale, money, waLink } from '../utils.js';
-import { entryKey, entryLines, optionsTotal } from '../orderText.js';
+import { finalPrice, hasSale, money } from '../utils.js';
+import { entryKey, optionsTotal } from '../orderText.js';
 import WhatsAppIcon from './WhatsAppIcon.jsx';
 import Icon from './Icon.jsx';
 
@@ -9,7 +9,7 @@ import Icon from './Icon.jsx';
  * Item details + choices (drink, toppings per half, extras), like the shop's ordering app.
  * Rules per group: min (required when >= 1) and max. max = 1 behaves like a radio choice.
  */
-export default function ItemSheet({ item, onClose, onAdd, settings }) {
+export default function ItemSheet({ item, onClose, onAdd, onCheckout, settings }) {
   const { t, tr } = useLang();
   const groups = item?.optionGroups || [];
   const [sel, setSel] = useState({}); // { groupIndex: [optionIndex, ...] }
@@ -91,7 +91,6 @@ export default function ItemSheet({ item, onClose, onAdd, settings }) {
     onClose();
   };
 
-  const waText = () => [tr(settings.whatsappGreeting), '', ...entryLines(entry(), tr)].join('\n');
 
   let firstMissingSet = false;
 
@@ -178,16 +177,22 @@ export default function ItemSheet({ item, onClose, onAdd, settings }) {
               <button type="button" className="btn btn-red sheet-add" onClick={add}>
                 <Icon name="bag" size={18} /> {t('add_to_order')} · <span className="num">{money(unit * qty)}</span>
               </button>
-              <a
+              {/* WhatsApp = add this item and go straight to the order form (name, pickup/delivery),
+                  so the message sent is always the complete order */}
+              <button
+                type="button"
                 className="btn btn-wa sheet-wa"
-                href={waLink(settings.whatsapp, waText())}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={(e) => { if (!check()) e.preventDefault(); }}
-                aria-label={t('order_whatsapp')}
+                onClick={() => {
+                  if (!check()) return;
+                  onAdd(entry());
+                  onClose();
+                  onCheckout?.();
+                }}
+                aria-label={t('add_and_send_whatsapp')}
+                title={t('add_and_send_whatsapp')}
               >
                 <WhatsAppIcon size={20} />
-              </a>
+              </button>
             </>
           )}
         </div>

@@ -583,3 +583,5 @@ input::placeholder, textarea::placeholder { color: #8c7a63; }
 .delivery-box p { margin: 0; }
 .loc-ok { display: flex; align-items: center; flex-wrap: wrap; gap: var(--s2); color: var(--green-text); font-weight: 700; background: var(--green-soft); border: 1px solid rgba(108, 192, 112, 0.35); border-radius: var(--radius-sm); padding: var(--s2) var(--s3); }
 .loc-ok .btn-link { color: var(--ink); padding: 4px 6px; min-height: 36px; }
+.deal-linked { display: flex; gap: var(--s3); align-items: center; padding: var(--s3); border: 1px solid rgba(230,182,102,.4); border-radius: var(--radius-sm); background: rgba(230,182,102,.06); }
+.deal-linked img { width: 64px; height: 64px; object-fit: cover; border-radius: var(--radius-sm); }

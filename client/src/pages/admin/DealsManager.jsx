@@ -47,6 +47,7 @@ function DealForm({ deal, menu, onSaved, onCancel }) {
     return new Date(start.getTime() + Number(amount || 0) * unit);
   }, [mode, amount, f.startAt, f.endAt]);
 
+  const linked = menu.find((m) => f.items.map(String).includes(String(m._id))) || null;
   const toggleItem = (id) =>
     set('items')(f.items.map(String).includes(String(id)) ? f.items.filter((x) => String(x) !== String(id)) : [...f.items, id]);
 
@@ -74,9 +75,29 @@ function DealForm({ deal, menu, onSaved, onCancel }) {
 
   return (
     <form className="card form" onSubmit={submit}>
-      <BiInput label={t('title')} value={f.title} onChange={set('title')} required />
+      {menu.length > 0 && (
+        <fieldset className="bi">
+          <legend>{t('linked_items')}</legend>
+          <p className="muted small">{t('deal_link_help')}</p>
+          <div className="chips">
+            {menu.map((m) => (
+              <label key={m._id} className={`chip ${f.items.map(String).includes(String(m._id)) ? 'on' : ''}`}>
+                <input type="checkbox" hidden checked={f.items.map(String).includes(String(m._id))} onChange={() => toggleItem(m._id)} />
+                {tr(m.name)} <span className="num">· {money(m.price)}</span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+      {linked && (
+        <div className="deal-linked">
+          {linked.image && <img src={linked.image} alt="" />}
+          <span><b>{tr(linked.name)}</b><br /><span className="muted small">{t('deal_inherits')}</span></span>
+        </div>
+      )}
+      <BiInput label={linked ? `${t('title')} (${t('optional')})` : t('title')} value={f.title} onChange={set('title')} required={!linked} />
       <BiInput label={t('description')} value={f.description} onChange={set('description')} textarea />
-      <ImagePicker current={f.image} file={file} removed={removed} onChange={(fl, rm) => { setFile(fl); setRemoved(rm); }} />
+      <ImagePicker current={f.image || (removed ? '' : linked?.image)} file={file} removed={removed} onChange={(fl, rm) => { setFile(fl); setRemoved(rm); }} />
       <div className="row">
         <label>{t('deal_price')} <span className="req" aria-hidden="true">*</span><input type="number" inputMode="decimal" min="0" step="0.5" value={f.price} onChange={(e) => set('price')(e.target.value)} required /></label>
         <label>{t('original_price')}<input type="number" min="0" step="0.5" value={f.originalPrice} onChange={(e) => set('originalPrice')(e.target.value)} /></label>
@@ -98,19 +119,6 @@ function DealForm({ deal, menu, onSaved, onCancel }) {
         <p className="muted small">{t('ends')}: <b>{isNaN(end) ? '-' : fmt(end)}</b></p>
       </fieldset>
 
-      {menu.length > 0 && (
-        <fieldset className="bi">
-          <legend>{t('linked_items')}</legend>
-          <div className="chips">
-            {menu.map((m) => (
-              <label key={m._id} className={`chip ${f.items.map(String).includes(String(m._id)) ? 'on' : ''}`}>
-                <input type="checkbox" hidden checked={f.items.map(String).includes(String(m._id))} onChange={() => toggleItem(m._id)} />
-                {tr(m.name)}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      )}
 
       <label className="check"><input type="checkbox" checked={f.active} onChange={(e) => set('active')(e.target.checked)} /> {t('active')}</label>
       <div className="form-actions">
@@ -136,7 +144,7 @@ export default function DealsManager() {
   }, []);
 
   const remove = async (d) => {
-    if (!window.confirm(`${tr(d.title)} – ${t('confirm_delete')}`)) return;
+    if (!window.confirm(`${tr(d.display?.title || d.title)} – ${t('confirm_delete')}`)) return;
     await api.remove('deals', d._id);
     load();
   };
@@ -155,9 +163,9 @@ export default function DealsManager() {
           const st = dealStatus(d);
           return (
             <div key={d._id} className={`admin-row ${st === 'expired' || st === 'paused' ? 'inactive' : ''}`}>
-              <div className="thumb">{d.image ? <img src={d.image} alt="" /> : <Icon name="flame" size={26} strokeWidth={1.5} />}</div>
+              <div className="thumb">{(d.display?.image || d.image) ? <img src={d.display?.image || d.image} alt="" /> : <Icon name="flame" size={26} strokeWidth={1.5} />}</div>
               <div className="admin-row-main">
-                <b>{tr(d.title)} <span className={`pill pill-${st}`}>{t(`st_${st}`)}</span></b>
+                <b>{tr(d.display?.title || d.title)} <span className={`pill pill-${st}`}>{t(`st_${st}`)}</span></b>
                 <span>
                   <b className="text-red">{money(d.price)}</b>
                   {d.originalPrice ? <s className="muted"> {money(d.originalPrice)}</s> : null}

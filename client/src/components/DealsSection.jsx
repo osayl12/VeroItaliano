@@ -31,7 +31,7 @@ function Countdown({ endAt, onExpire }) {
   );
 }
 
-export default function DealsSection({ deals, settings, onAdd, onExpire }) {
+export default function DealsSection({ deals, settings, onAdd, onOpen, onExpire }) {
   const { t, tr } = useLang();
   if (!deals.length) return null;
 
@@ -61,6 +61,14 @@ export default function DealsSection({ deals, settings, onAdd, onExpire }) {
                     {off > 0 && <del className="price-old num">{money(d.originalPrice)}</del>}
                   </div>
                   <Countdown endAt={d.endAt} onExpire={onExpire} />
+                  {d.item && d.item.available !== false ? (
+                  // the deal IS a menu item: open its choices (drink, toppings) at the deal price
+                  <div className="card-actions">
+                    <button type="button" className="btn btn-red" onClick={() => onOpen(d.item)}>
+                      <Icon name="sliders" size={18} /> {(d.item.optionGroups || []).length ? t('choose_and_add') : t('add')}
+                    </button>
+                  </div>
+                  ) : (
                   <div className="card-actions">
                     <a className="btn btn-wa" href={waLink(settings.whatsapp, msg)} target="_blank" rel="noopener noreferrer">
                       <WhatsAppIcon size={18} /> {t('order_whatsapp')}
@@ -74,6 +82,7 @@ export default function DealsSection({ deals, settings, onAdd, onExpire }) {
                       <Icon name="plus" size={18} /> {t('add')}
                     </button>
                   </div>
+                  )}
                 </div>
               </article>
             );

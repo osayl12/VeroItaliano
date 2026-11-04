@@ -1,0 +1,151 @@
+/* =========================================================
+   "One Evening at the Oven" – scroll landing page
+   Each .act sets --p (0 -> 1). Only transform / opacity / clip-path move.
+   ========================================================= */
+.evening { background: var(--bg); color: var(--ink); overflow-x: clip; }
+.act { position: relative; }
+.act-stage { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; }
+.ev-loading { min-height: 100svh; display: grid; place-items: center; background: var(--bg); }
+.ev-loading-glow { width: 40vmin; height: 40vmin; border-radius: 50%; background: radial-gradient(circle, rgba(255, 138, 31, 0.35), transparent 70%); }
+
+/* ---------- top bar + evening rail ---------- */
+.ev-top {
+  position: fixed; inset: 0 0 auto; z-index: 60; height: 64px; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--s4);
+  padding: 0 var(--s4); background: linear-gradient(180deg, rgba(7, 5, 4, 0.92), rgba(7, 5, 4, 0.55) 70%, transparent);
+}
+.ev-brand img { height: 48px; width: auto; }
+.ev-top-actions { display: flex; align-items: center; gap: var(--s2); }
+.ev-rail { --rail: 0; display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--s3); max-width: 760px; width: 100%; justify-self: center; }
+.ev-rail-time { font-size: 0.8125rem; font-weight: 700; color: var(--gold); min-width: 3.2em; text-align: center; }
+.ev-rail-line { position: relative; height: 34px; }
+.ev-rail-line::before { content: ''; position: absolute; inset: 50% 0 auto; height: 2px; background: var(--border); transform: translateY(-50%); }
+.ev-rail-fill { position: absolute; top: 50%; inset-inline-start: 0; height: 2px; width: 100%; transform-origin: right; transform: translateY(-50%) scaleX(var(--rail)); background: linear-gradient(90deg, var(--fire), var(--gold)); }
+[dir='ltr'] .ev-rail-fill { transform-origin: left; }
+.ev-rail-flame { position: absolute; top: 50%; inset-inline-start: calc(var(--rail) * 100%); transform: translate(50%, -50%); color: var(--fire); filter: drop-shadow(0 0 6px rgba(255, 138, 31, 0.8)); }
+.ev-rail-stops { position: absolute; inset: 0; display: flex; justify-content: space-between; margin: 0; padding: 0; list-style: none; }
+.ev-rail-stops a { display: inline-flex; align-items: center; min-height: 34px; padding: 0 4px; font-size: 0.75rem; font-weight: 700; color: var(--muted); transform: translateY(-14px); }
+.ev-rail-stops a:hover { color: var(--gold); }
+
+/* ---------- 1. FIRE: four planes ---------- */
+.hero-planes { --mx: 0; --my: 0; position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 72px var(--s4) var(--s6); }
+.hp-bg {
+  position: absolute; inset: -10%;
+  background:
+    radial-gradient(ellipse 45% 40% at 50% 34%, rgba(255, 138, 31, 0.32), transparent 70%),
+    radial-gradient(ellipse 35% 45% at 8% 30%, rgba(36, 118, 58, 0.22), transparent 70%),
+    radial-gradient(ellipse 35% 45% at 92% 30%, rgba(192, 40, 27, 0.22), transparent 70%),
+    var(--bg);
+  transform: translate3d(calc(var(--mx) * -12px), calc(var(--p) * -6vh + var(--my) * -10px), 0);
+}
+.hp-subject { position: relative; z-index: 1; transform: translate3d(calc(var(--mx) * 22px), calc(var(--p) * -16vh + var(--my) * 14px), 0) scale(calc(1 - var(--p) * 0.14)); }
+.hp-subject img { height: min(46vh, 74vw); width: auto; filter: drop-shadow(0 18px 50px rgba(255, 138, 31, 0.22)); }
+.hp-atmo { position: absolute; inset: 0; z-index: 2; width: 100%; height: 100%; pointer-events: none; }
+.hp-copy { position: relative; z-index: 3; margin-top: var(--s3); transform: translate3d(0, calc(var(--p) * -24vh), 0); opacity: clamp(0, calc((1 - var(--p)) * 2.4), 1); }
+.hp-copy h1 { font-size: clamp(2.2rem, 6.5vw, 4.25rem); font-weight: 900; margin: 0; text-shadow: 0 4px 24px rgba(0, 0, 0, 0.9); }
+.hp-copy p { color: var(--muted); font-size: clamp(1.05rem, 2.2vw, 1.3rem); margin: var(--s2) auto var(--s4); max-width: 34ch; }
+.hp-cta { display: flex; gap: var(--s3); justify-content: center; flex-wrap: wrap; }
+.hp-fore { position: absolute; inset: 0; z-index: 4; pointer-events: none; transform: translate3d(calc(var(--mx) * 44px), calc(var(--p) * -42vh + var(--my) * 26px), 0); }
+.hp-fore img { position: absolute; width: min(30vw, 420px); aspect-ratio: 1; object-fit: cover; border-radius: 50%; filter: blur(3px) brightness(0.85); box-shadow: 0 30px 80px rgba(0, 0, 0, 0.8); }
+.hp-fore-a { bottom: -14vh; inset-inline-end: -8vw; }
+.hp-fore-b { bottom: -18vh; inset-inline-start: -10vw; }
+
+/* ---------- 2. CRAFT: macro zoom + assembling lines ---------- */
+.craft { position: absolute; inset: 0; display: grid; grid-template-columns: 1.1fr 1fr; align-items: center; gap: var(--s6); padding: 88px max(var(--s5), 5vw) var(--s6); }
+.craft-img { position: relative; height: min(70vh, 640px); border-radius: 24px; overflow: hidden; box-shadow: var(--shadow-3); }
+.craft-img img { width: 100%; height: 100%; object-fit: cover; transform: scale(calc(1 + var(--p) * 0.5)); transform-origin: 55% 45%; }
+.craft-copy h2 { font-size: clamp(2rem, 4.5vw, 3.25rem); margin-bottom: var(--s5); }
+.craft-copy ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: var(--s4); }
+.craft-copy li {
+  font-size: clamp(1.1rem, 2vw, 1.4rem); font-weight: 600; padding-inline-start: var(--s4); border-inline-start: 3px solid var(--gold);
+  opacity: clamp(0, calc((var(--p) - var(--i) * 0.2 - 0.12) * 6), 1);
+  transform: translate3d(0, calc((1 - clamp(0, calc((var(--p) - var(--i) * 0.2 - 0.12) * 6), 1)) * 24px), 0);
+}
+
+/* ---------- 3. TONIGHT: sideways table ---------- */
+.table { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding-top: 72px; background: radial-gradient(ellipse 80% 60% at 50% 60%, #1d140c, var(--bg) 75%); }
+.table-title { padding: 0 max(var(--s5), 5vw); font-size: clamp(1.9rem, 4.2vw, 3rem); margin-bottom: var(--s5); }
+.table-window { overflow: hidden; }
+.table-track { display: flex; gap: var(--s5); margin: 0; padding: var(--s3) max(var(--s5), 5vw) var(--s6); list-style: none; width: max-content; will-change: transform; }
+.plate { display: flex; flex-direction: column; gap: var(--s2); width: clamp(240px, 26vw, 360px); color: var(--ink); }
+.plate-img { display: block; aspect-ratio: 4 / 3; border-radius: 20px; overflow: hidden; box-shadow: var(--shadow-2); border: 1px solid rgba(230, 182, 102, 0.25); transition: transform var(--dur) var(--ease); }
+.plate-img img { width: 100%; height: 100%; object-fit: cover; }
+.plate:hover .plate-img { transform: translateY(-4px); }
+.plate-name { font-weight: 800; font-size: 1.15rem; }
+.plate-price { color: var(--gold); font-weight: 900; font-size: 1.2rem; }
+
+/* ---------- 4. HUSH: authored silence ---------- */
+.hush { position: absolute; inset: 0; display: grid; place-items: center; background: #000; }
+.hush-fire {
+  position: absolute; width: 70vmin; height: 70vmin; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 186, 74, 0.9) 0%, rgba(255, 110, 20, 0.55) 30%, rgba(150, 30, 10, 0.25) 55%, transparent 72%);
+  transform: scale(calc(0.25 + var(--p) * 1.1)); opacity: clamp(0, calc(min(var(--p) * 3, (1 - var(--p)) * 3)), 1);
+}
+.hush-word { position: relative; font-size: clamp(2.5rem, 8vw, 6rem); font-weight: 900; color: var(--ink); opacity: clamp(0, calc(min(var(--p) * 3 - 0.3, (1 - var(--p)) * 3)), 1); }
+
+/* ---------- 5. THE PULL ---------- */
+.pull { position: absolute; inset: 0; display: grid; grid-template-columns: 2.2fr 1fr; /* RTL: first column (pizza) is on the right */ align-items: center; gap: var(--s5); padding: 80px max(var(--s5), 4vw) var(--s5); background: radial-gradient(ellipse 60% 60% at 60% 55%, rgba(255, 138, 31, 0.12), transparent 70%), var(--bg); }
+.pull-stage { position: relative; }
+.pull-stage { display: flex; align-items: center; justify-content: center; min-width: 0; }
+.pull-canvas { display: block; filter: drop-shadow(0 24px 50px rgba(0, 0, 0, 0.7)); }
+.pull-copy { position: relative; min-height: 14em; }
+.pull-cue { position: absolute; inset: 0 0 auto; font-size: clamp(3rem, 8vw, 6.5rem); font-weight: 900; margin: 0; opacity: clamp(0, calc((0.72 - var(--p)) * 6), 1); transform: translate3d(0, calc(var(--p) * -40px), 0); }
+.pull-end { visibility: hidden; opacity: 0; transform: translate3d(0, 24px, 0); transition: opacity 300ms var(--ease), transform 300ms var(--ease), visibility 0s linear 300ms; }
+.act-pull.is-done .pull-end, .act-pull.is-static .pull-end { visibility: visible; opacity: 1; transform: none; transition: opacity 300ms var(--ease), transform 300ms var(--ease); }
+.pull-name { font-size: clamp(2rem, 4.5vw, 3.25rem); font-weight: 900; margin: 0; }
+.pull-price { font-size: 1.6rem; font-weight: 900; color: var(--gold); margin: var(--s1) 0 var(--s4); }
+
+/* ---------- 6. DEALS: plates land ---------- */
+.ev-deals { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 80px max(var(--s5), 5vw) var(--s5); }
+.ev-deals h2 { font-size: clamp(2.2rem, 5vw, 3.75rem); margin-bottom: var(--s5); }
+.ev-deals ul { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--s5); }
+.ev-deals li {
+  --land: clamp(0, calc(var(--p) * 2.6 - var(--i) * 0.35), 1);
+  opacity: var(--land);
+  transform: translate3d(0, calc((1 - var(--land)) * 40vh), 0) rotate(calc((1 - var(--land)) * (var(--i) - 1) * 6deg));
+}
+.ev-deal { display: flex; flex-direction: column; gap: var(--s2); padding: var(--s3); border-radius: 20px; background: var(--surface); border: 1px solid rgba(230, 182, 102, 0.35); box-shadow: var(--shadow-2); color: var(--ink); }
+.ev-deal img { aspect-ratio: 4 / 3; width: 100%; object-fit: cover; border-radius: 14px; }
+.ev-deal-title { font-weight: 800; font-size: 1.15rem; }
+.ev-deal-price { color: var(--gold); font-weight: 900; font-size: 1.4rem; }
+
+/* ---------- 7. LAST CALL ---------- */
+.last-call { position: relative; min-height: 100svh; display: grid; place-items: center; text-align: center; padding: 96px var(--s4) calc(var(--s7) + var(--mobile-bar-h)); background: radial-gradient(ellipse 60% 50% at 50% 70%, rgba(255, 138, 31, 0.2), transparent 70%), #000; overflow: hidden; }
+.lc-embers { position: absolute; inset: 0; width: 100%; height: 100%; }
+.lc-inner { position: relative; max-width: 760px; }
+.lc-inner h2 { font-size: clamp(2.4rem, 7vw, 5rem); font-weight: 900; margin: 0 0 var(--s3); }
+.lc-inner > p { color: var(--muted); font-size: 1.2rem; margin-bottom: var(--s5); }
+.lc-cta { display: flex; flex-wrap: wrap; gap: var(--s3); justify-content: center; }
+.lc-meta { display: flex; flex-wrap: wrap; gap: var(--s4); justify-content: center; margin-top: var(--s6); color: var(--muted); }
+.lc-meta a, .lc-meta span { display: inline-flex; align-items: center; gap: 6px; min-height: var(--tap); }
+.lc-meta a:hover { color: var(--gold); }
+
+/* ---------- mobile art direction ---------- */
+@media (max-width: 820px) {
+  .ev-top { grid-template-columns: auto 1fr auto; height: 58px; gap: var(--s2); }
+  .ev-brand img { height: 40px; }
+  .ev-top .ev-menu-link { display: none; }
+  .ev-rail-stops { display: none; }
+  .hp-subject img { height: min(36vh, 78vw); }
+  .hp-fore img { width: 44vw; }
+  .hp-fore-a { bottom: -10vh; inset-inline-end: -14vw; }
+  .hp-fore-b { bottom: -12vh; inset-inline-start: -16vw; }
+  .hp-cta .btn { flex: 1 1 100%; }
+  .craft { grid-template-columns: 1fr; grid-template-rows: 42vh auto; gap: var(--s4); padding-top: 72px; align-content: start; }
+  .craft-img { height: 100%; }
+  .plate { width: 64vw; }
+  .pull { grid-template-columns: 1fr; grid-template-rows: auto 1fr; align-content: center; padding-top: 70px; gap: var(--s3); }
+  .pull-copy { order: 2; min-height: 11em; }
+  .pull-stage { order: 1; }
+  .pull-cue { font-size: 3rem; }
+  .ev-deals ul { grid-template-columns: 1fr; gap: var(--s3); }
+  .ev-deal { flex-direction: row; align-items: center; }
+  .ev-deal img { width: 38%; }
+}
+
+/* ---------- reduced motion: every act is a finished, still frame ---------- */
+.act.is-static .act-stage { position: relative; height: auto; min-height: 100svh; }
+.act.is-static .hero-planes, .act.is-static .craft, .act.is-static .table, .act.is-static .hush,
+.act.is-static .pull, .act.is-static .ev-deals { position: relative; min-height: 100svh; }
+.act.is-static * { transition: none !important; }
+.act.is-static .table-window { overflow-x: auto; }
+.act.is-static .table-track { transform: none !important; }

@@ -5,6 +5,7 @@ import Settings from '../models/Settings.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { upload, removeUpload } from '../middleware/upload.js';
 import { getSettings } from '../utils/settings.js';
+import { withItem } from './public.js';
 
 const router = Router();
 router.use(requireAdmin);
@@ -29,10 +30,11 @@ const MENU_FIELDS = ['name', 'description', 'howMade', 'category', 'price', 'sal
 const DEAL_FIELDS = ['title', 'description', 'image', 'price', 'originalPrice', 'startAt', 'endAt', 'items', 'active'];
 
 // Generic CRUD for menu items and deals
-function crud(path, Model, fields, sort) {
+function crud(path, Model, fields, sort, mapList) {
   router.get(path, async (req, res, next) => {
     try {
-      res.json(await Model.find().sort(sort).lean());
+      const list = await Model.find().sort(sort).lean();
+      res.json(mapList ? await mapList(list) : list);
     } catch (e) {
       next(e);
     }
@@ -76,7 +78,14 @@ function crud(path, Model, fields, sort) {
 }
 
 crud('/menu', MenuItem, MENU_FIELDS, { category: 1, order: 1, createdAt: 1 });
-crud('/deals', Deal, DEAL_FIELDS, { endAt: -1 });
+// deals list shows the linked menu item's name/image when the deal has none of its own
+crud('/deals', Deal, DEAL_FIELDS, { endAt: -1 }, async (list) => {
+  const menu = await MenuItem.find().lean();
+  return list.map((d) => {
+    const x = withItem(d, menu);
+    return { ...d, display: { title: x.title, image: x.image, itemName: x.item?.name || null } };
+  });
+});
 
 // Settings: hours, temporary closing, contact info, map
 const SETTINGS_FIELDS = [

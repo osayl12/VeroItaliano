@@ -70,12 +70,46 @@ export default function HomePage() {
     });
   };
   const closeSheet = useCallback(() => setSheetItem(null), []);
+  // With items in the cart, a WhatsApp button opens the order form instead of an empty chat,
+  // so the message always contains the full order + name + pickup/delivery.
+  const toCartIfOrder = (e) => {
+    if (cart.length) {
+      e.preventDefault();
+      setCartOpen(true);
+    }
+  };
+
+
   const setQty = (key, qty) => setCart((c) => (qty <= 0 ? c.filter((x) => x.key !== key) : c.map((x) => (x.key === key ? { ...x, qty } : x))));
   const closeCart = useCallback(() => setCartOpen(false), []);
   const cartCount = cart.reduce((s, x) => s + x.qty, 0);
 
   // ids of menu items that are part of an active deal
   const dealItemIds = useMemo(() => new Set((data?.deals || []).flatMap((d) => d.items || []).map(String)), [data]);
+
+  // Sync: while a deal runs, its menu item is sold at the deal price everywhere
+  // (menu card, choices panel, cart and WhatsApp message all read salePrice).
+  const menuView = useMemo(() => {
+    const dealPrice = new Map();
+    for (const d of data?.deals || []) for (const id of d.items || []) dealPrice.set(String(id), Number(d.price));
+    return (data?.menu || []).map((m) => {
+      const dp = dealPrice.get(String(m._id));
+      if (dp == null || dp >= Number(m.price)) return m;
+      return { ...m, salePrice: m.salePrice != null && m.salePrice !== '' ? Math.min(dp, Number(m.salePrice)) : dp };
+    });
+  }, [data]);
+  const openItem = useCallback((item) => setSheetItem(menuView.find((m) => String(m._id) === String(item._id)) || item), [menuView]);
+
+  // links from the landing page: /menu?item=<id> opens that item directly
+  useEffect(() => {
+    if (!menuView.length) return;
+    const id = new URLSearchParams(window.location.search).get('item');
+    const item = id && menuView.find((m) => String(m._id) === id);
+    if (item) {
+      setSheetItem(item);
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, [menuView]);
 
   if (error && !data) {
     return (
@@ -96,15 +130,15 @@ export default function HomePage() {
       <Header settings={settings} cartCount={cartCount} onCart={() => setCartOpen(true)} showDeals={deals.length > 0} />
       <main id="main" tabIndex={-1}>
         <Hero settings={settings} />
-        <DealsSection deals={deals} settings={settings} onAdd={addToCart} onExpire={load} />
-        <MenuSection menu={menu} settings={settings} dealItemIds={dealItemIds} onAdd={addToCart} onOpen={setSheetItem} />
+        <DealsSection deals={deals} settings={settings} onAdd={addToCart} onOpen={openItem} onExpire={load} />
+        <MenuSection menu={menuView} settings={settings} dealItemIds={dealItemIds} onAdd={addToCart} onOpen={openItem} />
         <HoursSection settings={settings} />
         <LocationSection settings={settings} />
       </main>
       <Footer settings={settings} />
 
       {/* Desktop: floating buttons */}
-      <a className="wa-float desktop-only" href={waLink(settings.whatsapp, tr(settings.whatsappGreeting))} target="_blank" rel="noopener noreferrer" aria-label={t('order_whatsapp')}>
+      <a className="wa-float desktop-only" href={waLink(settings.whatsapp, tr(settings.whatsappGreeting))} target="_blank" rel="noopener noreferrer" aria-label={t('order_whatsapp')} onClick={toCartIfOrder}>
         <WhatsAppIcon size={30} />
       </a>
       {cartCount > 0 && !cartOpen && (
@@ -116,7 +150,7 @@ export default function HomePage() {
       {/* Mobile: sticky bottom action bar (thumb zone) */}
       <nav className="mobile-bar" aria-label={t('call_to_order')}>
         <a href={telLink(settings.phone)} className="mb-btn mb-call"><Icon name="phone" size={22} /><span>{t('call')}</span></a>
-        <a href={waLink(settings.whatsapp, tr(settings.whatsappGreeting))} target="_blank" rel="noopener noreferrer" className="mb-btn mb-wa">
+        <a href={waLink(settings.whatsapp, tr(settings.whatsappGreeting))} target="_blank" rel="noopener noreferrer" className="mb-btn mb-wa" onClick={toCartIfOrder}>
           <WhatsAppIcon size={22} /><span>{t('whatsapp')}</span>
         </a>
         <button type="button" className="mb-btn mb-cart" onClick={() => setCartOpen(true)}>
@@ -125,7 +159,7 @@ export default function HomePage() {
         </button>
       </nav>
 
-      {sheetItem && <ItemSheet item={sheetItem} onClose={closeSheet} onAdd={addToCart} settings={settings} />}
+      {sheetItem && <ItemSheet item={sheetItem} onClose={closeSheet} onAdd={addToCart} onCheckout={() => setCartOpen(true)} settings={settings} />}
       <CartDrawer open={cartOpen} onClose={closeCart} cart={cart} setQty={setQty} clear={() => setCart([])} settings={settings} />
     </>
   );
