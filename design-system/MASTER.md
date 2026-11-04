@@ -12,18 +12,26 @@ The source of truth for all UI work on this project. Before building or changing
 - Wrap numbers, times, phone numbers and prices in `<bdi dir="ltr">` or `dir="ltr"` so they don't flip.
 - Every text field in the database is `{ he, ar }`. Every UI string lives in `client/src/i18n.jsx`, never hard-coded.
 
-## Color tokens (`client/src/styles.css` `:root`)
-| Token | Value | Use | Contrast |
-|---|---|---|---|
-| `--green` | `#0f7a3d` | primary actions, active states | white text 5.4:1 |
-| `--red` | `#c8102e` | Call button, prices, sale badges | white text 5.9:1 |
-| `--wa` | `#25d366` | WhatsApp buttons only | **dark text `--on-wa` only** (white fails at 2:1) |
-| `--bg` / `--bg-2` | `#fff8ee` / `#f6ead6` | page / subtle surfaces | |
-| `--wood` | `#2b1608` | hero, footer, countdown | |
-| `--ink` / `--muted` | `#2a1a12` / `#66564a` | text | muted ≥ 4.9:1 on bg |
-| `--focus` | `#1d4ed8` | keyboard focus ring | |
+## Color tokens (`client/src/styles.css` `:root`), taken from the logo
+The site is **dark**, matching the logo's black background (`color-scheme: dark`).
 
-Never use raw hex values in components. Add a token instead.
+| Token | Value | From the logo | Use | Contrast |
+|---|---|---|---|---|
+| `--bg` | `#070504` | black background | page | |
+| `--surface` / `--surface-2` | `#1a130d` / `#241a12` | | cards, inputs, chips | |
+| `--ink` | `#fbf1d9` | cream lettering | text | 18:1 |
+| `--muted` | `#c2ad8c` | | secondary text | 9:1 |
+| `--gold` | `#e6b666` | gold outline | prices, headings accents, active tabs, lang switch, outline buttons | 10.9:1 |
+| `--on-gold` | `#1a0f05` | | text on gold | 10:1 |
+| `--green` | `#24763a` | flag green | button background (white text) | 5.6:1 |
+| `--green-text` | `#6cc070` | | "open now", green as text | 9:1 |
+| `--red` | `#c0281b` | flag red | Call button, badges (white text) | 5.9:1 |
+| `--red-text` | `#ff6b57` | | red as text (errors, delete) | 7:1 |
+| `--fire` | `#ff8a1f` | oven flame | glows only (hero, hover), never text | |
+| `--wa` | `#25d366` | | WhatsApp only, **dark text** | 9:1 |
+| `--focus` | `#fbe895` | gold highlight | keyboard focus ring | |
+
+The logo files are `client/public/logo.webp`, with `logo.png` as a fallback (transparent background, CapCut watermark removed). The favicon is cut from the oven area (`favicon.png`, `icon-192.png`). Never recolor or stretch the logo.
 
 ## Typography
 - Hebrew: **Heebo**. Arabic: **Cairo** (switched with `body.lang-ar`). Logo only: **Pacifico**.

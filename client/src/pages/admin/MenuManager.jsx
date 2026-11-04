@@ -8,7 +8,7 @@ import { BiInput, ImagePicker, Toast, useToast } from './fields.jsx';
 
 const EMPTY = {
   name: { he: '', ar: '' }, description: { he: '', ar: '' }, howMade: { he: '', ar: '' },
-  category: 'pizza', price: '', salePrice: '', image: '', active: true, order: 0
+  category: 'pizza', price: '', salePrice: '', image: '', active: true, available: true, featured: false, order: 0
 };
 
 function ItemForm({ item, onSaved, onCancel }) {
@@ -58,6 +58,8 @@ function ItemForm({ item, onSaved, onCancel }) {
       <ImagePicker current={f.image} file={file} removed={removed} onChange={(fl, rm) => { setFile(fl); setRemoved(rm); }} />
       <div className="row">
         <label className="check"><input type="checkbox" checked={f.active} onChange={(e) => set('active')(e.target.checked)} /> {t('active')}</label>
+        <label className="check"><input type="checkbox" checked={f.available !== false} onChange={(e) => set('available')(e.target.checked)} /> {t('available_now')}</label>
+        <label className="check"><input type="checkbox" checked={!!f.featured} onChange={(e) => set('featured')(e.target.checked)} /> {t('featured_field')}</label>
         <label>{t('order_field')}<input type="number" value={f.order} onChange={(e) => set('order')(e.target.value)} /></label>
       </div>
       <div className="form-actions">
@@ -108,6 +110,8 @@ export default function MenuManager() {
                     <span>
                       {hasSale(i) ? <><s className="muted">{money(i.price)}</s> <b className="text-red">{money(i.salePrice)}</b></> : money(i.price)}
                       {!i.active && <span className="pill pill-gray">{t('st_paused')}</span>}
+                      {i.active && i.available === false && <span className="pill pill-gray">{t('unavailable')}</span>}
+                      {i.featured && <span className="pill pill-active">★</span>}
                     </span>
                   </div>
                   <div className="admin-row-actions">

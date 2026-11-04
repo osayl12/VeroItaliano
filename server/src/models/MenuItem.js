@@ -2,7 +2,8 @@ import mongoose from 'mongoose';
 
 const i18n = { he: { type: String, default: '' }, ar: { type: String, default: '' } };
 
-export const CATEGORIES = ['pizza', 'pizzaOfDay', 'starters', 'salads', 'breads', 'drinks', 'desserts'];
+// Same categories as the shop's ordering app (+ a few spare ones)
+export const CATEGORIES = ['pizza', 'combos', 'focaccia', 'starters', 'pizzaOfDay', 'salads', 'breads', 'drinks', 'desserts'];
 
 const menuItemSchema = new mongoose.Schema(
   {
@@ -13,7 +14,9 @@ const menuItemSchema = new mongoose.Schema(
     price: { type: Number, required: true, min: 0 },
     salePrice: { type: Number, min: 0, default: null }, // optional discounted price
     image: { type: String, default: '' },
-    active: { type: Boolean, default: true },
+    active: { type: Boolean, default: true }, // false = hidden from the site
+    available: { type: Boolean, default: true }, // false = shown greyed out as "not available now"
+    featured: { type: Boolean, default: false }, // the pizza used in the landing page peak
     order: { type: Number, default: 0 }
   },
   { timestamps: true }

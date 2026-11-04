@@ -4,8 +4,8 @@ import { finalPrice, hasSale, money, waLink } from '../utils.js';
 import WhatsAppIcon from './WhatsAppIcon.jsx';
 import Icon from './Icon.jsx';
 
-export const CATEGORIES = ['pizza', 'pizzaOfDay', 'starters', 'salads', 'breads', 'drinks', 'desserts'];
-const BIG = new Set(['pizza', 'pizzaOfDay']);
+export const CATEGORIES = ['pizza', 'combos', 'focaccia', 'starters', 'pizzaOfDay', 'salads', 'breads', 'drinks', 'desserts'];
+const BIG = new Set(['pizza', 'combos', 'focaccia', 'pizzaOfDay']);
 
 function SaleBadge({ inline }) {
   const { t } = useLang();
@@ -16,11 +16,12 @@ function MenuCard({ item, onSale, settings, onAdd }) {
   const { t, tr } = useLang();
   const price = finalPrice(item);
   const msg = `${tr(settings.whatsappGreeting)}\n• ${tr(item.name)} (${money(price)})`;
-  const big = BIG.has(item.category);
+  const big = BIG.has(item.category) || !!item.image; // photo card whenever there is a photo
   const sale = onSale || hasSale(item);
+  const off = item.available === false; // shown, but greyed out and not orderable
 
   return (
-    <article className={`menu-card ${big ? 'menu-card-big' : 'menu-card-small'}`}>
+    <article className={`menu-card ${big ? 'menu-card-big' : 'menu-card-small'} ${off ? 'is-unavailable' : ''}`}>
       {big && (
         <div className="menu-img">
           {item.image ? (
@@ -28,7 +29,8 @@ function MenuCard({ item, onSale, settings, onAdd }) {
           ) : (
             <div className="img-placeholder" aria-hidden="true"><Icon name="pizza" size={56} strokeWidth={1.5} /></div>
           )}
-          {sale && <SaleBadge />}
+          {sale && !off && <SaleBadge />}
+          {off && <span className="unavailable-badge">{t('unavailable')}</span>}
         </div>
       )}
       <div className="menu-body">
@@ -49,6 +51,9 @@ function MenuCard({ item, onSale, settings, onAdd }) {
             <p>{tr(item.howMade)}</p>
           </details>
         )}
+        {off ? (
+          !big && <p className="unavailable-text">{t('unavailable')}</p>
+        ) : (
         <div className="card-actions">
           <a className="btn btn-wa btn-sm" href={waLink(settings.whatsapp, msg)} target="_blank" rel="noopener noreferrer" aria-label={`${t('order_whatsapp')}: ${tr(item.name)}`}>
             <WhatsAppIcon size={16} /> {t('whatsapp')}
@@ -62,6 +67,7 @@ function MenuCard({ item, onSale, settings, onAdd }) {
             <Icon name="plus" size={16} /> {t('add')}
           </button>
         </div>
+        )}
       </div>
     </article>
   );
@@ -93,7 +99,7 @@ export default function MenuSection({ menu, settings, dealItemIds, onAdd }) {
         {shown.map((g) => (
           <div className="menu-group" key={g.cat}>
             <h3 className="group-title">{t(`cat_${g.cat}`)}</h3>
-            <div className={BIG.has(g.cat) ? 'menu-grid' : 'menu-list'}>
+            <div className={BIG.has(g.cat) || g.items.some((i) => i.image) ? 'menu-grid' : 'menu-list'}>
               {g.items.map((item) => (
                 <MenuCard key={item._id} item={item} settings={settings} onSale={dealItemIds.has(String(item._id))} onAdd={onAdd} />
               ))}
