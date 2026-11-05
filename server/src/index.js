@@ -17,7 +17,11 @@ if (!JWT_SECRET || JWT_SECRET.length < 32 || JWT_SECRET.startsWith('replace-with
 }
 
 const app = express();
-app.set('trust proxy', 1);
+// How many proxies sit in front of Express. req.ip (used by the login rate limit) is taken from
+// X-Forwarded-For, counting this many hops from the right, so a visitor can't fake it.
+// 1 = the client nginx only (local Docker). Production: Caddy -> nginx -> Express, so TRUST_PROXY=2.
+const TRUST_PROXY = Number.parseInt(process.env.TRUST_PROXY ?? '1', 10);
+app.set('trust proxy', Number.isInteger(TRUST_PROXY) && TRUST_PROXY >= 0 ? TRUST_PROXY : 1);
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
 // The site and API share one origin (nginx / Vite proxy), so cross-origin access is only enabled when CLIENT_ORIGIN is set
 if (CLIENT_ORIGIN) app.use(cors({ origin: CLIENT_ORIGIN.split(',').map((o) => o.trim()) }));
