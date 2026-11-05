@@ -1,0 +1,76 @@
+# Build both images, push them to Docker Hub, then tell the Oracle server to pull and restart.
+#
+# Secrets (repo -> Settings -> Secrets and variables -> Actions):
+#   DOCKERHUB_USERNAME  Docker Hub user that owns the veroitaliano-* repositories
+#   DOCKERHUB_TOKEN     Docker Hub access token (Read & Write), not the password
+#   SSH_HOST            server address
+#   SSH_USER            server user
+#   SSH_KEY             private half of a deploy-only SSH key (see README "CI/CD")
+#   SSH_KNOWN_HOSTS     output of `ssh-keyscan -t ed25519 <SSH_HOST>`, checked once by hand
+#
+# On the server, the deploy key is locked in ~/.ssh/authorized_keys with command="...", so this
+# workflow can only run the update command and nothing else.
+
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', '.gitignore', '.gitattributes']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  images:
+    name: Build and push images
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [server, client]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: ./${{ matrix.app }}
+          platforms: linux/amd64
+          push: true
+          # :latest is what the server pulls; :<commit> is kept for rollbacks
+          tags: |
+            ${{ secrets.DOCKERHUB_USERNAME }}/veroitaliano-${{ matrix.app }}:latest
+            ${{ secrets.DOCKERHUB_USERNAME }}/veroitaliano-${{ matrix.app }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.app }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.app }}
+
+  deploy:
+    name: Update the server
+    needs: images
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Pull and restart on the server
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_KEY: ${{ secrets.SSH_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # the server's forced command does the update; StrictHostKeyChecking=yes refuses an unknown host
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes "$SSH_USER@$SSH_HOST"
+          rm -f ~/.ssh/deploy_key

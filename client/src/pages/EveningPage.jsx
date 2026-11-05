@@ -12,7 +12,7 @@ import { finalPrice, formatPhone, israelNow, money, openStatus, telLink, waLink 
 import '../evening/evening.css';
 
 /**
- * "One Evening at the Oven" – scroll landing page (scrollcraft plan, grammar: Evening Service).
+ * "One Evening at the Oven" – scroll landing page.
  * Chapters of one evening, joined by cuts:
  *   fire (layered hero) → craft (zoom + lines) → tonight's menu (sideways table) → hush (silence)
  *   → THE PULL (peak) → tonight's deals (plates land) → last call (live status, holds)

@@ -65,16 +65,43 @@ VeroItaliano/
 
 5. Open http://localhost:5173 for the site and http://localhost:5173/admin for the admin panel.
 
-## 🐳 Deploy (Oracle Cloud Ubuntu)
+## 🐳 Deploy (Oracle)
 
-```bash
-git clone https://github.com/osayl12/VeroItaliano.git
-cd VeroItaliano
-cp .env.example .env && nano .env      # set a strong ADMIN_PASSWORD and JWT_SECRET
-docker compose up -d --build
-```
+Production runs on a small Oracle Cloud Ubuntu server, behind the shared **Caddy** reverse proxy in `~/carconnect`. Caddy has a block for `veroitaliano.duckdns.org`, handles HTTPS, and forwards to the `client` container (nginx), which serves the site and proxies `/api` and `/uploads` to `server`.
 
-The site runs on port 80 (set `WEB_PORT` to change it). Open the port in the Oracle VCN security list and in `ufw`. MongoDB data and uploaded images are kept in Docker volumes.
+The server never builds anything. Images are built on the PC and pulled from Docker Hub:
+
+1. **On the PC** (from the repo folder), build and push both images. `..\vero-images.yml` lives outside the repo and only adds the `image:` names:
+   ```powershell
+   docker compose -f docker-compose.yml -f ..\vero-images.yml build
+   docker compose -f docker-compose.yml -f ..\vero-images.yml push
+   ```
+2. **On the server**, pull and restart:
+   ```bash
+   cd ~/VeroItaliano && docker compose pull && docker compose up -d --no-build
+   ```
+
+Server-only settings stay on the server, never in the repo: `docker-compose.server.yml` (project name, image names, container name) and `.env` (`COMPOSE_FILE`, `WEB_PORT` bound to localhost, `TRUST_PROXY=2`, secrets). Uploaded images are kept in the `uploads` Docker volume; the data is in MongoDB Atlas.
+
+### 🤖 CI/CD (GitHub Actions)
+
+Every push to `main` (except docs-only changes) runs [.github/workflows/deploy.yml](.github/workflows/deploy.yml): it builds both images for `linux/amd64`, pushes `:latest` and `:<commit>` to Docker Hub, then SSHes to the server, which runs the update command above. It can also be started by hand from the **Actions** tab.
+
+**One-time setup**
+
+1. **Deploy key** (on the PC, a new key used only for deploys):
+   ```powershell
+   ssh-keygen -t ed25519 -f $HOME\.ssh\vero_deploy -N '""' -C "github-deploy"
+   ```
+2. **On the server**, add the public key (`vero_deploy.pub`) to `~/.ssh/authorized_keys` as **one line**, locked to the update command:
+   ```
+   command="cd ~/VeroItaliano && docker compose pull -q && docker compose up -d --no-build && docker image prune -f",no-port-forwarding,no-agent-forwarding,no-X11-forwarding,no-pty ssh-ed25519 AAAA... github-deploy
+   ```
+   Even if the key leaks, it can only run that command.
+3. **Docker Hub:** Account settings → Personal access tokens → new token with **Read & Write**.
+4. **GitHub:** repo → Settings → Secrets and variables → Actions → add `DOCKERHUB_USERNAME`, `DOCKERHUB_TOKEN`, `SSH_HOST`, `SSH_USER`, `SSH_KEY` (the whole private key file `vero_deploy`) and `SSH_KNOWN_HOSTS` (the output of `ssh-keyscan -t ed25519 <server>`).
+
+**Rollback:** on the server, set the image tags in `docker-compose.server.yml` to an older `:<commit>` and run `docker compose up -d --no-build`.
 
 ## 📝 Notes
 
@@ -87,4 +114,5 @@ The site runs on port 80 (set `WEB_PORT` to change it). Open the port in the Ora
 - **Not available now:** in `/admin` → Menu, untick "available now" to grey an item out without hiding it. "Featured pizza" picks the pizza for the landing page.
 - **Map:** in Google Maps, go to Share → Embed a map → Copy HTML, then paste it in Admin → Settings.
 - **WhatsApp number** uses international format without `+`.
+- **Editing `.env`:** use VS Code (it saves UTF-8). Don't append to it with `>>` in Windows PowerShell 5: that writes UTF-16 and `docker compose` fails with `unexpected character "\x00"`.
 - **Admin login** is limited to 10 attempts every 15 minutes. There is no sign-up page; the only account is the one created from `.env`.
