@@ -6,7 +6,8 @@
 #   SSH_HOST            server address
 #   SSH_USER            server user
 #   SSH_KEY             private half of a deploy-only SSH key (see README "CI/CD")
-#   SSH_KNOWN_HOSTS     output of `ssh-keyscan -t ed25519 <SSH_HOST>`, checked once by hand
+#   SSH_KNOWN_HOSTS     the server's ed25519 host key ("ssh-ed25519 AAAA...", from
+#                       /etc/ssh/ssh_host_ed25519_key.pub); a leading host/IP is ignored
 #
 # On the server, the deploy key is locked in ~/.ssh/authorized_keys with command="...", so this
 # workflow can only run the update command and nothing else.
@@ -70,7 +71,11 @@ jobs:
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
-          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          # pin the server key: take only "ssh-ed25519 AAAA..." from the secret and pair it with SSH_HOST,
+          # so the secret works whether or not it starts with a host name / IP
+          HOSTKEY=$(printf '%s\n' "$SSH_KNOWN_HOSTS" | grep -oE 'ssh-ed25519 [A-Za-z0-9+/=]+' | head -1)
+          if [ -z "$HOSTKEY" ]; then echo "::error::SSH_KNOWN_HOSTS has no ssh-ed25519 key"; exit 1; fi
+          printf '%s %s\n' "$SSH_HOST" "$HOSTKEY" > ~/.ssh/known_hosts
           # the server's forced command does the update; StrictHostKeyChecking=yes refuses an unknown host
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes "$SSH_USER@$SSH_HOST"
+          ssh -T -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes "$SSH_USER@$SSH_HOST"
           rm -f ~/.ssh/deploy_key
