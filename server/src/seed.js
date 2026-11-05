@@ -15,8 +15,8 @@ export async function ensureAdmin() {
   if (await Admin.countDocuments()) return;
   const username = (process.env.ADMIN_USERNAME || 'admin').toLowerCase();
   const password = process.env.ADMIN_PASSWORD;
-  if (!password || password.length < 8) {
-    console.warn('No admin exists and ADMIN_PASSWORD is missing/short (min 8). Admin was NOT created.');
+  if (!password || password.length < 12) {
+    console.warn('No admin exists and ADMIN_PASSWORD is missing/short (min 12). Admin was NOT created.');
     return;
   }
   await Admin.create({ username, passwordHash: await bcrypt.hash(password, 12) });

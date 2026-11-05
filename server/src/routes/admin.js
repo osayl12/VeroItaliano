@@ -3,7 +3,7 @@ import MenuItem from '../models/MenuItem.js';
 import Deal from '../models/Deal.js';
 import Settings from '../models/Settings.js';
 import { requireAdmin } from '../middleware/auth.js';
-import { upload, removeUpload } from '../middleware/upload.js';
+import { imageUpload, removeUpload } from '../middleware/upload.js';
 import { getSettings } from '../utils/settings.js';
 import { withItem } from './public.js';
 
@@ -40,7 +40,7 @@ function crud(path, Model, fields, sort, mapList) {
     }
   });
 
-  router.post(path, upload.single('image'), async (req, res, next) => {
+  router.post(path, imageUpload, async (req, res, next) => {
     try {
       const doc = await Model.create(pick(parseBody(req), fields));
       res.status(201).json(doc);
@@ -50,7 +50,7 @@ function crud(path, Model, fields, sort, mapList) {
     }
   });
 
-  router.put(`${path}/:id`, upload.single('image'), async (req, res, next) => {
+  router.put(`${path}/:id`, imageUpload, async (req, res, next) => {
     try {
       const doc = await Model.findById(req.params.id);
       if (!doc) return res.status(404).json({ error: 'not_found' });
@@ -120,12 +120,25 @@ router.put('/settings', async (req, res, next) => {
     }
     if (data.whatsapp) data.whatsapp = String(data.whatsapp).replace(/\D/g, '');
     if (data.mapUrl) data.mapUrl = extractEmbedSrc(data.mapUrl);
+    for (const k of ['instagram', 'mapLink']) if (k in data) data[k] = httpsUrl(data[k]);
     const s = await Settings.findOneAndUpdate({ key: 'main' }, { $set: data }, { new: true, upsert: true, runValidators: true });
     res.json(s);
   } catch (e) {
     next(e);
   }
 });
+
+// Links shown on the site must be https:// (blocks javascript: and other schemes)
+function httpsUrl(value) {
+  const v = String(value || '').trim();
+  if (!v) return '';
+  try {
+    const u = new URL(v);
+    return u.protocol === 'https:' ? u.href : '';
+  } catch {
+    return '';
+  }
+}
 
 // Accept either a plain embed URL or the full <iframe ...> code that Google Maps gives you
 function extractEmbedSrc(value) {

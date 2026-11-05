@@ -11,15 +11,16 @@ import { ensureAdmin, seedIfEmpty } from './seed.js';
 
 const { PORT = 5000, MONGO_URI = 'mongodb://localhost:27017/veroitaliano', JWT_SECRET, CLIENT_ORIGIN } = process.env;
 
-if (!JWT_SECRET || JWT_SECRET.length < 16) {
-  console.error('JWT_SECRET is missing or too short (min 16 chars). Set it in .env');
+if (!JWT_SECRET || JWT_SECRET.length < 32 || JWT_SECRET.startsWith('replace-with')) {
+  console.error('JWT_SECRET is missing, too short (min 32 chars) or still the example value. Set it in .env');
   process.exit(1);
 }
 
 const app = express();
 app.set('trust proxy', 1);
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-app.use(cors(CLIENT_ORIGIN ? { origin: CLIENT_ORIGIN.split(',') } : {}));
+// The site and API share one origin (nginx / Vite proxy), so cross-origin access is only enabled when CLIENT_ORIGIN is set
+if (CLIENT_ORIGIN) app.use(cors({ origin: CLIENT_ORIGIN.split(',').map((o) => o.trim()) }));
 app.use(express.json({ limit: '1mb' }));
 
 app.use('/uploads', express.static(UPLOAD_DIR, { maxAge: '30d' }));
@@ -29,9 +30,10 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 
 app.use((err, req, res, next) => {
-  console.error(err.message);
   const status = err.name === 'ValidationError' || err.name === 'CastError' || err.name === 'MulterError' ? 400 : err.status || 500;
-  res.status(status).json({ error: err.message || 'server_error' });
+  console.error(status >= 500 ? err : err.message);
+  // never send internal error details (database / driver messages) to the browser
+  res.status(status).json({ error: status >= 500 ? 'server_error' : err.message || 'bad_request' });
 });
 
 await mongoose.connect(MONGO_URI);

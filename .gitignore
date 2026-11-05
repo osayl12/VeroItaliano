@@ -150,3 +150,7 @@ vite.config.ts.timestamp-*
 
 # uploaded images
 uploads/
+
+# private project notes (IPs, hosts, accounts)
+*-PROJECT.md
+*Atlas-Migration*.md

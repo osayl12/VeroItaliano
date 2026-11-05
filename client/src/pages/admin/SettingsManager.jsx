@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { api } from '../../api.js';
+import { api, setToken } from '../../api.js';
 import { useLang } from '../../i18n.jsx';
 import Icon from '../../components/Icon.jsx';
 import { BiInput, Toast, useToast } from './fields.jsx';
@@ -32,7 +32,8 @@ export default function SettingsManager() {
   const changePw = async (e) => {
     e.preventDefault();
     try {
-      await api.changePassword(pw.current, pw.next);
+      const { token } = await api.changePassword(pw.current, pw.next);
+      if (token) setToken(token); // old tokens stop working after a password change
       setPw({ current: '', next: '' });
       toast(t('password_changed'));
     } catch (err) {
@@ -64,7 +65,7 @@ export default function SettingsManager() {
         <h3><Icon name="lock" size={18} /> {t('change_password')}</h3>
         <div className="row">
           <label>{t('current_password')}<input type="password" value={pw.current} onChange={(e) => setPw({ ...pw, current: e.target.value })} autoComplete="current-password" required /></label>
-          <label>{t('new_password')}<input type="password" minLength={8} value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} autoComplete="new-password" required /></label>
+          <label>{t('new_password')}<input type="password" minLength={12} value={pw.next} onChange={(e) => setPw({ ...pw, next: e.target.value })} autoComplete="new-password" required /></label>
         </div>
         <div className="form-actions"><button className="btn btn-outline">{t('change_password')}</button></div>
       </form>
