@@ -76,9 +76,13 @@ jobs:
           USER_=$(printf '%s' "$SSH_USER" | tr -d '\r' | tr -s ' \n\t' '\n' | grep -v ':$' | tail -1)
           if [ -z "$HOST" ] || [ -z "$USER_" ]; then echo "::error::SSH_HOST or SSH_USER is empty"; exit 1; fi
           # pin the server key under a fixed alias, so the check doesn't depend on how SSH_HOST is written
-          HOSTKEY=$(printf '%s\n' "$SSH_KNOWN_HOSTS" | grep -oE 'ssh-ed25519 [A-Za-z0-9+/=]+' | head -1)
-          if [ -z "$HOSTKEY" ]; then echo "::error::SSH_KNOWN_HOSTS has no ssh-ed25519 key"; exit 1; fi
-          printf 'vero-server %s\n' "$HOSTKEY" > ~/.ssh/known_hosts
+          # an ed25519 public key is always "AAAAC3NzaC1lZDI1NTE5AAAAI" + 43 more base64 characters;
+          # remove all whitespace first, so a key that wrapped onto several lines when copied still works
+          B64=$(printf '%s' "$SSH_KNOWN_HOSTS" | tr -d ' \t\r\n' | grep -oE 'AAAAC3NzaC1lZDI1NTE5AAAAI[A-Za-z0-9+/]{43}' | head -1)
+          if [ -z "$B64" ]; then echo "::error::SSH_KNOWN_HOSTS doesn't contain a complete ssh-ed25519 key"; exit 1; fi
+          printf 'vero-server ssh-ed25519 %s\n' "$B64" > ~/.ssh/known_hosts
+          echo "Pinned server key fingerprint (compare with the server):"
+          ssh-keygen -lf ~/.ssh/known_hosts
           # the server's forced command does the update; StrictHostKeyChecking=yes refuses any other key
           ssh -T -i ~/.ssh/deploy_key -o HostKeyAlias=vero-server -o StrictHostKeyChecking=yes -o BatchMode=yes "$USER_@$HOST"
           rm -f ~/.ssh/deploy_key
