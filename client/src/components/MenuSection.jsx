@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { useLang } from '../i18n.jsx';
 import { finalPrice, hasSale, money, waLink } from '../utils.js';
+import { entryKey, quickOrderText } from '../orderText.js';
 import WhatsAppIcon from './WhatsAppIcon.jsx';
 import Icon from './Icon.jsx';
 
@@ -9,13 +10,18 @@ const BIG = new Set(['pizza', 'combos', 'focaccia', 'pizzaOfDay']);
 
 function SaleBadge({ inline }) {
   const { t } = useLang();
-  return <span className={`sale-badge ${inline ? 'inline' : ''}`}><Icon name="tag" size={14} /> {t('on_sale')}</span>;
+  return (
+    <span className={`sale-badge ${inline ? 'inline' : ''}`}>
+      <Icon name="tag" size={14} /> {t('on_sale')}
+    </span>
+  );
 }
 
-function MenuCard({ item, onSale, settings, onAdd, onOpen }) {
+function MenuCard({ item, onSale, settings, onAdd, onOpen, onWhatsApp }) {
   const { t, tr } = useLang();
   const price = finalPrice(item);
-  const msg = `${tr(settings.whatsappGreeting)}\n• ${tr(item.name)} (${money(price)})`;
+  const msg = quickOrderText(tr(settings.whatsappGreeting), tr(item.name), price);
+  const entry = { key: entryKey(item), kind: 'item', id: item._id, name: item.name, price };
   const big = BIG.has(item.category) || !!item.image; // photo card whenever there is a photo
   const sale = onSale || hasSale(item);
   const off = item.available === false; // shown, but greyed out and not orderable
@@ -28,7 +34,9 @@ function MenuCard({ item, onSale, settings, onAdd, onOpen }) {
           {item.image ? (
             <img src={item.image} alt={tr(item.name)} loading="lazy" decoding="async" />
           ) : (
-            <div className="img-placeholder" aria-hidden="true"><Icon name="pizza" size={56} strokeWidth={1.5} /></div>
+            <div className="img-placeholder" aria-hidden="true">
+              <Icon name="pizza" size={56} strokeWidth={1.5} />
+            </div>
           )}
           {sale && !off && <SaleBadge />}
           {off && <span className="unavailable-badge">{t('unavailable')}</span>}
@@ -48,40 +56,54 @@ function MenuCard({ item, onSale, settings, onAdd, onOpen }) {
         {tr(item.description) && <p className="menu-desc">{tr(item.description)}</p>}
         {tr(item.howMade) && (
           <details className="how-made">
-            <summary><Icon name="chef" size={16} /> {t('how_made')}</summary>
+            <summary>
+              <Icon name="chef" size={16} /> {t('how_made')}
+            </summary>
             <p>{tr(item.howMade)}</p>
           </details>
         )}
-        {off ? (
-          !big && <p className="unavailable-text">{t('unavailable')}</p>
-        ) : (
-        hasOptions ? (
-        <div className="card-actions">
-          <button type="button" className="btn btn-outline btn-sm" onClick={() => onOpen(item)} aria-label={`${t('choose_and_add')}: ${tr(item.name)}`}>
-            <Icon name="sliders" size={16} /> {t('choose_and_add')}
-          </button>
-        </div>
-        ) : (
-        <div className="card-actions">
-          <a className="btn btn-wa btn-sm" href={waLink(settings.whatsapp, msg)} target="_blank" rel="noopener noreferrer" aria-label={`${t('order_whatsapp')}: ${tr(item.name)}`}>
-            <WhatsAppIcon size={16} /> {t('whatsapp')}
-          </a>
-          <button
-            type="button"
-            className="btn btn-outline btn-sm"
-            aria-label={`${t('add')}: ${tr(item.name)}`}
-            onClick={() => onAdd({ key: `item-${item._id}`, kind: 'item', id: item._id, name: item.name, price })}
-          >
-            <Icon name="plus" size={16} /> {t('add')}
-          </button>
-        </div>
-        ))}
+        {off && !big && <p className="unavailable-text">{t('unavailable')}</p>}
+        {!off && (
+          <div className="card-actions">
+            {hasOptions ? (
+              <button
+                type="button"
+                className="btn btn-outline btn-sm"
+                onClick={() => onOpen(item)}
+                aria-label={`${t('choose_and_add')}: ${tr(item.name)}`}
+              >
+                <Icon name="sliders" size={16} /> {t('choose_and_add')}
+              </button>
+            ) : (
+              <>
+                <a
+                  className="btn btn-wa btn-sm"
+                  href={waLink(settings.whatsapp, msg)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => onWhatsApp?.(e, entry)}
+                  aria-label={`${t('order_whatsapp')}: ${tr(item.name)}`}
+                >
+                  <WhatsAppIcon size={16} /> {t('whatsapp')}
+                </a>
+                <button
+                  type="button"
+                  className="btn btn-outline btn-sm"
+                  aria-label={`${t('add')}: ${tr(item.name)}`}
+                  onClick={() => onAdd(entry)}
+                >
+                  <Icon name="plus" size={16} /> {t('add')}
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </article>
   );
 }
 
-export default function MenuSection({ menu, settings, dealItemIds, onAdd, onOpen }) {
+export default function MenuSection({ menu, settings, dealItemIds, onAdd, onOpen, onWhatsApp }) {
   const { t } = useLang();
   const [active, setActive] = useState('all');
 
@@ -94,11 +116,26 @@ export default function MenuSection({ menu, settings, dealItemIds, onAdd, onOpen
   return (
     <section className="section menu" id="menu" aria-labelledby="menu-title">
       <div className="container">
-        <h2 className="section-title" id="menu-title"><Icon name="pizza" size={30} className="title-icon" /> {t('menu_title')}</h2>
+        <h2 className="section-title" id="menu-title">
+          <Icon name="pizza" size={30} className="title-icon" /> {t('menu_title')}
+        </h2>
         <div className="tabs" role="group" aria-label={t('category')}>
-          <button type="button" aria-pressed={active === 'all'} className={active === 'all' ? 'active' : ''} onClick={() => setActive('all')}>{t('all')}</button>
+          <button
+            type="button"
+            aria-pressed={active === 'all'}
+            className={active === 'all' ? 'active' : ''}
+            onClick={() => setActive('all')}
+          >
+            {t('all')}
+          </button>
           {groups.map((g) => (
-            <button type="button" key={g.cat} aria-pressed={active === g.cat} className={active === g.cat ? 'active' : ''} onClick={() => setActive(g.cat)}>
+            <button
+              type="button"
+              key={g.cat}
+              aria-pressed={active === g.cat}
+              className={active === g.cat ? 'active' : ''}
+              onClick={() => setActive(g.cat)}
+            >
               {t(`cat_${g.cat}`)}
             </button>
           ))}
@@ -109,7 +146,15 @@ export default function MenuSection({ menu, settings, dealItemIds, onAdd, onOpen
             <h3 className="group-title">{t(`cat_${g.cat}`)}</h3>
             <div className={BIG.has(g.cat) || g.items.some((i) => i.image) ? 'menu-grid' : 'menu-list'}>
               {g.items.map((item) => (
-                <MenuCard key={item._id} item={item} settings={settings} onSale={dealItemIds.has(String(item._id))} onAdd={onAdd} onOpen={onOpen} />
+                <MenuCard
+                  key={item._id}
+                  item={item}
+                  settings={settings}
+                  onSale={dealItemIds.has(String(item._id))}
+                  onAdd={onAdd}
+                  onOpen={onOpen}
+                  onWhatsApp={onWhatsApp}
+                />
               ))}
             </div>
           </div>

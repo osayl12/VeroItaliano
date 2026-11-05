@@ -9,7 +9,6 @@ import DealsManager from './DealsManager.jsx';
 import HoursManager from './HoursManager.jsx';
 import SettingsManager from './SettingsManager.jsx';
 
-
 function Login({ onLogin }) {
   const { t } = useLang();
   const [username, setUsername] = useState('');
@@ -36,20 +35,57 @@ function Login({ onLogin }) {
   return (
     <div className="admin-login">
       <form className="card login-card" onSubmit={submit}>
-        <div className="login-top"><h1><Icon name="lock" size={22} /> {t('admin_panel')}</h1><LangSwitch /></div>
-        <label>{t('username')}<input value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" autoCapitalize="none" required aria-invalid={!!error} /></label>
+        <div className="login-top">
+          <h1>
+            <Icon name="lock" size={22} /> {t('admin_panel')}
+          </h1>
+          <LangSwitch />
+        </div>
+        <label>
+          {t('username')}
+          <input
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
+            autoComplete="username"
+            autoCapitalize="none"
+            required
+            aria-invalid={!!error}
+          />
+        </label>
         <label>
           {t('password')}
           <span className="pw-field">
-            <input type={showPw ? 'text' : 'password'} value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required aria-invalid={!!error} />
-            <button type="button" className="icon-btn pw-toggle" onClick={() => setShowPw((v) => !v)} aria-label={showPw ? t('hide_password') : t('show_password')} aria-pressed={showPw}>
+            <input
+              type={showPw ? 'text' : 'password'}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+              aria-invalid={!!error}
+            />
+            <button
+              type="button"
+              className="icon-btn pw-toggle"
+              onClick={() => setShowPw((v) => !v)}
+              aria-label={showPw ? t('hide_password') : t('show_password')}
+              aria-pressed={showPw}
+            >
               <Icon name={showPw ? 'eyeOff' : 'eye'} size={20} />
             </button>
           </span>
         </label>
-        {error && <p className="error" role="alert">{error}</p>}
-        <button className="btn btn-green btn-block" disabled={busy} aria-busy={busy}>{busy ? <span className="btn-spinner" aria-hidden="true" /> : null}{t('login')}</button>
-        <Link to="/" className="btn btn-link">{t('view_site')}</Link>
+        {error && (
+          <p className="error" role="alert">
+            {error}
+          </p>
+        )}
+        <button className="btn btn-green btn-block" disabled={busy} aria-busy={busy}>
+          {busy ? <span className="btn-spinner" aria-hidden="true" /> : null}
+          {t('login')}
+        </button>
+        <Link to="/" className="btn btn-link">
+          {t('view_site')}
+        </Link>
       </form>
     </div>
   );
@@ -86,16 +122,28 @@ export default function AdminPage() {
     <div className="admin">
       <header className="admin-header">
         <div className="container admin-header-inner">
-          <h1><Icon name="pizza" size={22} /> {t('admin_panel')}</h1>
+          <h1>
+            <Icon name="pizza" size={22} /> {t('admin_panel')}
+          </h1>
           <div className="admin-header-actions">
             <LangSwitch />
-            <a href="/" target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-light"><Icon name="external" size={16} /> {t('view_site')}</a>
-            <button type="button" className="btn btn-sm btn-outline-light" onClick={logout}><Icon name="logout" size={16} /> {t('logout')}</button>
+            <a href="/" target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-outline-light">
+              <Icon name="external" size={16} /> {t('view_site')}
+            </a>
+            <button type="button" className="btn btn-sm btn-outline-light" onClick={logout}>
+              <Icon name="logout" size={16} /> {t('logout')}
+            </button>
           </div>
         </div>
         <nav className="container admin-tabs" aria-label={t('admin_panel')}>
           {TABS.map((x) => (
-            <button type="button" key={x.id} aria-current={tab === x.id ? 'page' : undefined} className={tab === x.id ? 'active' : ''} onClick={() => setTab(x.id)}>
+            <button
+              type="button"
+              key={x.id}
+              aria-current={tab === x.id ? 'page' : undefined}
+              className={tab === x.id ? 'active' : ''}
+              onClick={() => setTab(x.id)}
+            >
               <Icon name={x.icon} size={18} /> {t(x.label)}
             </button>
           ))}

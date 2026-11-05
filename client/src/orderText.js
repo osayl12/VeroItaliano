@@ -15,11 +15,12 @@ export function optionsTotal(chosen = []) {
  *  "בחר את המשקה" -> "🥤 משקה", "החצי הראשון" -> "🍕 החצי הראשון", others -> "➕ ..." */
 export function groupLabel(group, tr) {
   const raw = tr(group).trim();
-  const he = group?.he || '', ar = group?.ar || '';
+  const he = group?.he || '',
+    ar = group?.ar || '';
   const short = raw
-    .replace(/^בחר(ו|י)?\s+את\s+ה/, '')   // "בחר את המשקה" -> "משקה"
+    .replace(/^בחר(ו|י)?\s+את\s+ה/, '') // "בחר את המשקה" -> "משקה"
     .replace(/^בחר(ו|י)?\s+את\s+/, '')
-    .replace(/^اختر(وا|ي)?\s+ال/, '')     // "اختر المشروب" -> "مشروب"
+    .replace(/^اختر(وا|ي)?\s+ال/, '') // "اختر المشروب" -> "مشروب"
     .replace(/^اختر(وا|ي)?\s+/, '');
   const emoji = /משקה|مشروب/.test(he + ar) ? '🥤' : /חצי|نصف/.test(he + ar) ? '🍕' : '➕';
   return `${emoji} ${short.charAt(0).toUpperCase() + short.slice(1)}`;
@@ -40,9 +41,18 @@ export function entryLines(entry, tr) {
 }
 
 /** Stable key so the same item with the same choices stacks in the cart */
-export function entryKey(item, chosen) {
+export function entryKey(item, chosen = []) {
+  if (!chosen.some((g) => g.items.length)) return `item-${item._id}`;
   const sig = chosen
-    .map((g) => g.items.map((o) => o.id).sort().join('.'))
+    .map((g) =>
+      g.items
+        .map((o) => o.id)
+        .sort()
+        .join('.')
+    )
     .join('|');
-  return `item-${item._id}${sig.replace(/\|/g, '') ? `-${sig}` : ''}`;
+  return `item-${item._id}-${sig}`;
 }
+
+/** One-line WhatsApp order for a single item or deal: greeting + "• name (price)" */
+export const quickOrderText = (greeting, name, price) => `${greeting}\n• ${name} (${money(price)})`;

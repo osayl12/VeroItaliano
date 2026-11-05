@@ -28,8 +28,32 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  check:
+    name: Lint, format and tests
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        app: [server, client]
+    defaults:
+      run:
+        working-directory: ${{ matrix.app }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: ${{ matrix.app }}/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - run: npm run lint
+      - run: npm run format:check
+      - run: npm test
+      - if: matrix.app == 'client'
+        run: npm run build
+
   images:
     name: Build and push images
+    needs: check
     runs-on: ubuntu-latest
     strategy:
       matrix:

@@ -1,13 +1,19 @@
 // ---------- time / opening hours (always Israel time) ----------
 const TZ = 'Asia/Jerusalem';
 const toMin = (hhmm) => {
-  const [h, m] = String(hhmm || '0:0').split(':').map(Number);
+  const [h, m] = String(hhmm || '0:0')
+    .split(':')
+    .map(Number);
   return h * 60 + m;
 };
 
 export function israelNow() {
   const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: TZ, weekday: 'short', hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    timeZone: TZ,
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23'
   }).formatToParts(new Date());
   const get = (type) => parts.find((p) => p.type === type)?.value;
   const day = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(get('weekday'));
@@ -47,6 +53,21 @@ export function openStatus(settings) {
 // ---------- prices ----------
 export const money = (n) => `${Number(n).toLocaleString('he-IL', { maximumFractionDigits: 2 })}₪`;
 export const hasSale = (item) => item.salePrice != null && item.salePrice !== '' && Number(item.salePrice) < Number(item.price);
+
+/**
+ * While a deal runs, its linked menu item is sold at the deal price everywhere
+ * (menu card, landing page, choices panel, cart and WhatsApp message all read salePrice).
+ * If the item already has a lower sale price, that one wins.
+ */
+export function applyDealPrices(menu = [], deals = []) {
+  const dealPrice = new Map();
+  for (const d of deals) if (d.item) dealPrice.set(String(d.item._id), Number(d.price));
+  return menu.map((m) => {
+    const dp = dealPrice.get(String(m._id));
+    if (dp == null || dp >= Number(m.price)) return m;
+    return { ...m, salePrice: hasSale(m) ? Math.min(dp, Number(m.salePrice)) : dp };
+  });
+}
 export const finalPrice = (item) => (hasSale(item) ? Number(item.salePrice) : Number(item.price));
 
 // ---------- contact links ----------

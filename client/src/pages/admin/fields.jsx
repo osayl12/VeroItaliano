@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useLang } from '../../i18n.jsx';
 import Icon from '../../components/Icon.jsx';
 
@@ -9,7 +9,15 @@ export function BiInput({ label, value = {}, onChange, textarea = false, require
   const set = (k) => (e) => onChange({ ...value, [k]: e.target.value });
   return (
     <fieldset className="bi">
-      <legend>{label}{required && <span className="req" aria-hidden="true"> *</span>}</legend>
+      <legend>
+        {label}
+        {required && (
+          <span className="req" aria-hidden="true">
+            {' '}
+            *
+          </span>
+        )}
+      </legend>
       <label>
         <span className="lang-tag">{t('hebrew')}</span>
         <Tag value={value.he || ''} onChange={set('he')} rows={textarea ? 3 : undefined} required={required} lang="he" />
@@ -45,7 +53,9 @@ export function ImagePicker({ current, file, removed, onChange }) {
             <input type="file" accept="image/*" hidden onChange={(e) => e.target.files[0] && onChange(e.target.files[0], false)} />
           </label>
           {src && (
-            <button type="button" className="btn btn-link btn-sm" onClick={() => onChange(null, true)}><Icon name="trash" size={16} /> {t('remove_image')}</button>
+            <button type="button" className="btn btn-link btn-sm" onClick={() => onChange(null, true)}>
+              <Icon name="trash" size={16} /> {t('remove_image')}
+            </button>
           )}
         </div>
       </div>
@@ -56,8 +66,16 @@ export function ImagePicker({ current, file, removed, onChange }) {
 export function Toast({ msg }) {
   // Always rendered so screen readers pick up changes (aria-live)
   return (
-    <div className={`toast ${msg ? 'show' : ''} ${msg?.error ? 'toast-error' : ''}`} role={msg?.error ? 'alert' : 'status'} aria-live="polite">
-      {msg && <><Icon name={msg.error ? 'info' : 'check'} size={18} /> {msg.text}</>}
+    <div
+      className={`toast ${msg ? 'show' : ''} ${msg?.error ? 'toast-error' : ''}`}
+      role={msg?.error ? 'alert' : 'status'}
+      aria-live="polite"
+    >
+      {msg && (
+        <>
+          <Icon name={msg.error ? 'info' : 'check'} size={18} /> {msg.text}
+        </>
+      )}
     </div>
   );
 }
@@ -69,5 +87,7 @@ export function useToast() {
     const id = setTimeout(() => setMsg(null), msg.error ? 5000 : 3000);
     return () => clearTimeout(id);
   }, [msg]);
-  return [msg, (text, error = false) => setMsg({ text, error })];
+  // stable function, so pages can list it in effect dependencies
+  const show = useCallback((text, error = false) => setMsg({ text, error }), []);
+  return [msg, show];
 }

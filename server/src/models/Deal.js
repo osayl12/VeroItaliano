@@ -18,6 +18,8 @@ const dealSchema = new mongoose.Schema(
 );
 
 dealSchema.pre('validate', function (next) {
+  // a deal is one menu item at a deal price
+  if (this.items?.length > 1) this.items = this.items.slice(0, 1);
   if (this.endAt && this.startAt && this.endAt <= this.startAt) {
     return next(new Error('endAt must be after startAt'));
   }

@@ -42,7 +42,8 @@ const ThePull = forwardRef(function ThePull({ src, alt, geo = DEFAULT_GEO, stati
     const canvas = canvasRef.current;
     if (!canvas || !s.img) return;
     const ctx = canvas.getContext('2d');
-    const W = s.w, H = s.h;
+    const W = s.w,
+      H = s.h;
     const PAD = s.pad;
     ctx.clearRect(0, 0, s.cw, s.ch);
     ctx.save();
@@ -50,7 +51,9 @@ const ThePull = forwardRef(function ThePull({ src, alt, geo = DEFAULT_GEO, stati
     // photo with rounded corners
     ctx.save();
     const rr = Math.min(W, H) * 0.04;
-    ctx.beginPath(); ctx.roundRect(0, 0, W, H, rr); ctx.clip();
+    ctx.beginPath();
+    ctx.roundRect(0, 0, W, H, rr);
+    ctx.clip();
     ctx.drawImage(s.img, 0, 0, W, H);
     ctx.restore();
 
@@ -61,7 +64,8 @@ const ThePull = forwardRef(function ThePull({ src, alt, geo = DEFAULT_GEO, stati
     };
     const arc = [];
     for (let i = 0; i <= 14; i++) arc.push(at(geo.a0 + ((geo.a1 - geo.a0) * i) / 14));
-    const E0 = arc[0], E1 = arc[arc.length - 1];
+    const E0 = arc[0],
+      E1 = arc[arc.length - 1];
     const wedge = (c) => {
       c.beginPath();
       c.moveTo(C[0], C[1]);
@@ -102,9 +106,12 @@ const ThePull = forwardRef(function ThePull({ src, alt, geo = DEFAULT_GEO, stati
 
     // slice transform: lift toward the viewer (down + bigger) with a slight tilt
     const piv = [C[0] + ((E0[0] + E1[0]) / 2 - C[0]) * 0.55, C[1] + ((E0[1] + E1[1]) / 2 - C[1]) * 0.55];
-    const dy = e * H * 0.42, sc = 1 + 0.16 * e, rot = -0.08 * e;
+    const dy = e * H * 0.42,
+      sc = 1 + 0.16 * e,
+      rot = -0.08 * e;
     const T = ([x, y]) => {
-      const X = (x - piv[0]) * sc, Y = (y - piv[1]) * sc;
+      const X = (x - piv[0]) * sc,
+        Y = (y - piv[1]) * sc;
       return [piv[0] + X * Math.cos(rot) - Y * Math.sin(rot), piv[1] + dy + X * Math.sin(rot) + Y * Math.cos(rot)];
     };
 
@@ -123,22 +130,36 @@ const ThePull = forwardRef(function ThePull({ src, alt, geo = DEFAULT_GEO, stati
       const B = T(A);
       const thr = st.brk - snapShift;
       const width = Math.max(3, st.w * (W / 330));
-      const bow = (st.side === 0 ? -1 : st.side === 1 ? 1 : (st.t > 0.08 ? 0.6 : -0.6)) * W * 0.018;
+      const bow = (st.side === 0 ? -1 : st.side === 1 ? 1 : st.t > 0.08 ? 0.6 : -0.6) * W * 0.018;
       const cheese = (from, to, sag, wdt, side = 0) => {
-        const mx = (from[0] + to[0]) / 2 + side, my = (from[1] + to[1]) / 2 + sag * 0.35;
+        const mx = (from[0] + to[0]) / 2 + side,
+          my = (from[1] + to[1]) / 2 + sag * 0.35;
         ctx.lineCap = 'round';
         // blobs where the cheese is still attached
         ctx.fillStyle = '#f0c35a';
-        for (const q of [from, to]) { ctx.beginPath(); ctx.ellipse(q[0], q[1], wdt * 1.1, wdt * 0.7, 0, 0, Math.PI * 2); ctx.fill(); }
+        for (const q of [from, to]) {
+          ctx.beginPath();
+          ctx.ellipse(q[0], q[1], wdt * 1.1, wdt * 0.7, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
         ctx.strokeStyle = 'rgba(160, 100, 20, 0.35)';
         ctx.lineWidth = wdt + 2;
-        ctx.beginPath(); ctx.moveTo(from[0], from[1]); ctx.quadraticCurveTo(mx, my, to[0], to[1]); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(from[0], from[1]);
+        ctx.quadraticCurveTo(mx, my, to[0], to[1]);
+        ctx.stroke();
         ctx.strokeStyle = '#f0c35a';
         ctx.lineWidth = wdt;
-        ctx.beginPath(); ctx.moveTo(from[0], from[1]); ctx.quadraticCurveTo(mx, my, to[0], to[1]); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(from[0], from[1]);
+        ctx.quadraticCurveTo(mx, my, to[0], to[1]);
+        ctx.stroke();
         ctx.strokeStyle = 'rgba(255, 244, 205, 0.9)';
         ctx.lineWidth = Math.max(0.8, wdt * 0.38);
-        ctx.beginPath(); ctx.moveTo(from[0], from[1] - wdt * 0.15); ctx.quadraticCurveTo(mx, my - wdt * 0.2, to[0], to[1] - wdt * 0.15); ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(from[0], from[1] - wdt * 0.15);
+        ctx.quadraticCurveTo(mx, my - wdt * 0.2, to[0], to[1] - wdt * 0.15);
+        ctx.stroke();
       };
       if (e < thr) {
         const len = Math.hypot(B[0] - A[0], B[1] - A[1]);
@@ -209,6 +230,8 @@ const ThePull = forwardRef(function ThePull({ src, alt, geo = DEFAULT_GEO, stati
     const ro = new ResizeObserver(fit);
     ro.observe(canvas.parentElement);
     return () => ro.disconnect();
+    // reload only when the photo changes: draw() reads everything else from the state ref
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [src]);
 
   return <canvas ref={canvasRef} className="pull-canvas" role="img" aria-label={alt} />;

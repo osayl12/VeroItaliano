@@ -11,8 +11,12 @@ export default function HoursSection({ settings }) {
   return (
     <section className="section hours" id="hours" aria-labelledby="hours-title">
       <div className="container narrow">
-        <h2 className="section-title" id="hours-title"><Icon name="clock" size={30} className="title-icon" /> {t('hours_title')}</h2>
-        <div className="center"><StatusBadge settings={settings} /></div>
+        <h2 className="section-title" id="hours-title">
+          <Icon name="clock" size={30} className="title-icon" /> {t('hours_title')}
+        </h2>
+        <div className="center">
+          <StatusBadge settings={settings} />
+        </div>
         <table className="hours-table">
           <caption className="sr-only">{t('hours_title')}</caption>
           <tbody>
@@ -23,7 +27,13 @@ export default function HoursSection({ settings }) {
                   {h.day === today && <span className="today-tag">{t('today')}</span>}
                 </th>
                 <td className="hours-cell num">
-                  {h.closed ? <span className="muted">{t('closed')}</span> : <bdi dir="ltr">{h.open} – {h.close}</bdi>}
+                  {h.closed ? (
+                    <span className="muted">{t('closed')}</span>
+                  ) : (
+                    <bdi dir="ltr">
+                      {h.open} – {h.close}
+                    </bdi>
+                  )}
                 </td>
               </tr>
             ))}

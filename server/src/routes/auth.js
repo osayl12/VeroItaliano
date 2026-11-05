@@ -9,7 +9,10 @@ const router = Router();
 
 export const MIN_PASSWORD = 12;
 const signToken = (admin) =>
-  jwt.sign({ id: admin._id, username: admin.username, v: admin.tokenVersion || 0 }, process.env.JWT_SECRET, { algorithm: 'HS256', expiresIn: '1d' });
+  jwt.sign({ id: admin._id, username: admin.username, v: admin.tokenVersion || 0 }, process.env.JWT_SECRET, {
+    algorithm: 'HS256',
+    expiresIn: '1d'
+  });
 
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false });
 

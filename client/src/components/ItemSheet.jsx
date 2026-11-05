@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLang } from '../i18n.jsx';
 import { finalPrice, hasSale, money } from '../utils.js';
 import { entryKey, optionsTotal } from '../orderText.js';
+import { useDialog } from '../useDialog.js';
 import WhatsAppIcon from './WhatsAppIcon.jsx';
 import Icon from './Icon.jsx';
 
@@ -9,9 +10,9 @@ import Icon from './Icon.jsx';
  * Item details + choices (drink, toppings per half, extras), like the shop's ordering app.
  * Rules per group: min (required when >= 1) and max. max = 1 behaves like a radio choice.
  */
-export default function ItemSheet({ item, onClose, onAdd, onCheckout, settings }) {
+export default function ItemSheet({ item, onClose, onAdd, onCheckout }) {
   const { t, tr } = useLang();
-  const groups = item?.optionGroups || [];
+  const groups = useMemo(() => item?.optionGroups || [], [item]);
   const [sel, setSel] = useState({}); // { groupIndex: [optionIndex, ...] }
   const [qty, setQty] = useState(1);
   const [tried, setTried] = useState(false); // show "required" errors only after a try
@@ -25,20 +26,7 @@ export default function ItemSheet({ item, onClose, onAdd, onCheckout, settings }
     setTried(false);
   }, [item?._id]);
 
-  // dialog behaviour: focus, Esc, no page scroll behind
-  useEffect(() => {
-    if (!item) return;
-    const prev = document.activeElement;
-    closeRef.current?.focus();
-    const onKey = (e) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', onKey);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
-      prev?.focus?.();
-    };
-  }, [item, onClose]);
+  useDialog(!!item, onClose, closeRef);
 
   const toggle = (gi, oi) => {
     const g = groups[gi];
@@ -55,7 +43,11 @@ export default function ItemSheet({ item, onClose, onAdd, onCheckout, settings }
     () =>
       groups.map((g, gi) => ({
         group: g.name,
-        items: (sel[gi] || []).map((oi) => ({ id: g.options[oi]._id || `${gi}-${oi}`, name: g.options[oi].name, price: g.options[oi].price || 0 }))
+        items: (sel[gi] || []).map((oi) => ({
+          id: g.options[oi]._id || `${gi}-${oi}`,
+          name: g.options[oi].name,
+          price: g.options[oi].price || 0
+        }))
       })),
     [groups, sel]
   );
@@ -85,14 +77,15 @@ export default function ItemSheet({ item, onClose, onAdd, onCheckout, settings }
     return false;
   };
 
-  const add = () => {
+  // checkout = the WhatsApp button: add, then go straight to the order form (name, pickup/delivery)
+  const add = (checkout = false) => {
     if (!check()) return;
     onAdd(entry());
     onClose();
+    if (checkout) onCheckout?.();
   };
 
-
-  let firstMissingSet = false;
+  const firstMissing = tried ? missing.findIndex(Boolean) : -1;
 
   return (
     <div className="sheet-backdrop" onClick={onClose}>
@@ -121,7 +114,7 @@ export default function ItemSheet({ item, onClose, onAdd, onCheckout, settings }
           {groups.map((g, gi) => {
             const count = (sel[gi] || []).length;
             const isMissing = tried && missing[gi];
-            const ref = isMissing && !firstMissingSet ? ((firstMissingSet = true), firstMissingRef) : undefined;
+            const ref = gi === firstMissing ? firstMissingRef : undefined;
             return (
               <fieldset key={gi} className={`opt-group ${g.min > 0 ? 'is-required' : ''} ${isMissing ? 'has-error' : ''}`} ref={ref}>
                 <legend>
@@ -129,9 +122,13 @@ export default function ItemSheet({ item, onClose, onAdd, onCheckout, settings }
                   {g.min > 0 ? (
                     <span className="req-badge">{t('required')}</span>
                   ) : (
-                    <span className="opt-hint">{t('up_to').replace('{n}', g.max)}</span>
+                    <span className="opt-hint">{t('up_to', { n: g.max })}</span>
                   )}
-                  {g.max > 1 && <span className="opt-count num">{count}/{g.max}</span>}
+                  {g.max > 1 && (
+                    <span className="opt-count num">
+                      {count}/{g.max}
+                    </span>
+                  )}
                 </legend>
                 <div className="opt-grid" role={g.max === 1 ? 'radiogroup' : 'group'}>
                   {g.options.map((o, oi) => {
@@ -154,7 +151,11 @@ export default function ItemSheet({ item, onClose, onAdd, onCheckout, settings }
                     );
                   })}
                 </div>
-                {isMissing && <p className="opt-error" role="alert">{t('please_choose')} {tr(g.name)}</p>}
+                {isMissing && (
+                  <p className="opt-error" role="alert">
+                    {t('please_choose')} {tr(g.name)}
+                  </p>
+                )}
               </fieldset>
             );
           })}
@@ -162,32 +163,30 @@ export default function ItemSheet({ item, onClose, onAdd, onCheckout, settings }
 
         <div className="sheet-bar">
           {off ? (
-            <button type="button" className="btn btn-block" disabled>{t('unavailable')}</button>
+            <button type="button" className="btn btn-block" disabled>
+              {t('unavailable')}
+            </button>
           ) : (
             <>
               <div className="qty sheet-qty">
                 <button type="button" onClick={() => setQty((q) => Math.max(1, q - 1))} aria-label={t('decrease')} disabled={qty <= 1}>
                   <Icon name="minus" size={18} />
                 </button>
-                <span className="num" aria-live="polite">{qty}</span>
+                <span className="num" aria-live="polite">
+                  {qty}
+                </span>
                 <button type="button" onClick={() => setQty((q) => q + 1)} aria-label={t('increase')}>
                   <Icon name="plus" size={18} />
                 </button>
               </div>
-              <button type="button" className="btn btn-red sheet-add" onClick={add}>
+              <button type="button" className="btn btn-red sheet-add" onClick={() => add()}>
                 <Icon name="bag" size={18} /> {t('add_to_order')} · <span className="num">{money(unit * qty)}</span>
               </button>
-              {/* WhatsApp = add this item and go straight to the order form (name, pickup/delivery),
-                  so the message sent is always the complete order */}
+              {/* WhatsApp = add this item and go to the order form, so the message is always the complete order */}
               <button
                 type="button"
                 className="btn btn-wa sheet-wa"
-                onClick={() => {
-                  if (!check()) return;
-                  onAdd(entry());
-                  onClose();
-                  onCheckout?.();
-                }}
+                onClick={() => add(true)}
                 aria-label={t('add_and_send_whatsapp')}
                 title={t('add_and_send_whatsapp')}
               >

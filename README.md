@@ -103,6 +103,10 @@ Every push to `main` (except docs-only changes) runs [.github/workflows/deploy.y
 
 **Rollback:** on the server, set the image tags in `docker-compose.server.yml` to an older `:<commit>` and run `docker compose up -d --no-build`.
 
+## ✅ Checks
+
+In `client/` and in `server/`: `npm run lint` (ESLint), `npm run format` / `npm run format:check` (Prettier), `npm test` (Vitest in the client, `node --test` in the server). CI runs all of them, plus the client build, before any image is built.
+
 ## 📝 Notes
 
 - **Logo:** save the logo as `client/public/logo.png`. Until then, a text logo is shown.

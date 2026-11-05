@@ -26,7 +26,8 @@ export function StatusBadge({ settings }) {
   if (st.open) {
     return (
       <span className="status open" role="status">
-        <span className="dot" aria-hidden="true" /> {t('open_now')} · {t('closes_at')}<bdi className="num">{st.closesAt}</bdi>
+        <span className="dot" aria-hidden="true" /> {t('open_now')} · {t('closes_at')}
+        <bdi className="num">{st.closesAt}</bdi>
       </span>
     );
   }
@@ -35,7 +36,9 @@ export function StatusBadge({ settings }) {
       <Icon name="clock" size={16} /> {t('closed_now')}
       {st.opensAt && (
         <>
-          {' · '}{t('opens_at')}<bdi className="num">{st.opensAt}</bdi>
+          {' · '}
+          {t('opens_at')}
+          <bdi className="num">{st.opensAt}</bdi>
           {st.opensDay != null && ` (${t(`day_${st.opensDay}`)})`}
         </>
       )}
@@ -43,7 +46,7 @@ export function StatusBadge({ settings }) {
   );
 }
 
-export default function Hero({ settings }) {
+export default function Hero({ settings, onWhatsApp }) {
   const { t, tr } = useLang();
 
   return (
@@ -58,11 +61,19 @@ export default function Hero({ settings }) {
           <a className="btn btn-red btn-lg" href={telLink(settings.phone)}>
             <Icon name="phone" size={20} /> {t('call_to_order')}
           </a>
-          <a className="btn btn-wa btn-lg" href={waLink(settings.whatsapp, tr(settings.whatsappGreeting))} target="_blank" rel="noopener noreferrer">
+          <a
+            className="btn btn-wa btn-lg"
+            href={waLink(settings.whatsapp, tr(settings.whatsappGreeting))}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onWhatsApp}
+          >
             <WhatsAppIcon size={22} /> {t('order_whatsapp')}
           </a>
         </div>
-        <a className="hero-phone num" href={telLink(settings.phone)} dir="ltr">{formatPhone(settings.phone)}</a>
+        <a className="hero-phone num" href={telLink(settings.phone)} dir="ltr">
+          {formatPhone(settings.phone)}
+        </a>
       </div>
     </section>
   );

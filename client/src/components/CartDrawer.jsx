@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { useDialog } from '../useDialog.js';
 import { useLang } from '../i18n.jsx';
 import { money, waLink } from '../utils.js';
 import WhatsAppIcon from './WhatsAppIcon.jsx';
@@ -17,20 +18,7 @@ export default function CartDrawer({ open, onClose, cart, setQty, clear, setting
   const [tried, setTried] = useState(false);
   const closeRef = useRef(null);
 
-  // Dialog behaviour: focus the close button, Esc closes, page behind does not scroll
-  useEffect(() => {
-    if (!open) return;
-    const prevFocus = document.activeElement;
-    closeRef.current?.focus();
-    const onKey = (e) => e.key === 'Escape' && onClose();
-    document.addEventListener('keydown', onKey);
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', onKey);
-      document.body.style.overflow = '';
-      prevFocus?.focus?.();
-    };
-  }, [open, onClose]);
+  useDialog(open, onClose, closeRef);
 
   const total = cart.reduce((s, x) => s + x.price * x.qty, 0);
 
@@ -78,15 +66,11 @@ export default function CartDrawer({ open, onClose, cart, setQty, clear, setting
 
   return (
     <div className={`drawer-backdrop ${open ? 'open' : ''}`} onClick={onClose} aria-hidden={!open}>
-      <aside
-        className="drawer"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="cart-title"
-        onClick={(e) => e.stopPropagation()}
-      >
+      <aside className="drawer" role="dialog" aria-modal="true" aria-labelledby="cart-title" onClick={(e) => e.stopPropagation()}>
         <div className="drawer-head">
-          <h2 id="cart-title"><Icon name="bag" size={22} /> {t('cart')}</h2>
+          <h2 id="cart-title">
+            <Icon name="bag" size={22} /> {t('cart')}
+          </h2>
           <button ref={closeRef} type="button" className="icon-btn" onClick={onClose} aria-label={t('close')}>
             <Icon name="x" size={22} />
           </button>
@@ -96,7 +80,9 @@ export default function CartDrawer({ open, onClose, cart, setQty, clear, setting
           <div className="empty-state">
             <Icon name="pizza" size={48} strokeWidth={1.5} />
             <p>{t('cart_empty')}</p>
-            <a href="#menu" className="btn btn-green" onClick={onClose}>{t('nav_menu')}</a>
+            <a href="#menu" className="btn btn-green" onClick={onClose}>
+              {t('nav_menu')}
+            </a>
           </div>
         ) : (
           <>
@@ -115,7 +101,9 @@ export default function CartDrawer({ open, onClose, cart, setQty, clear, setting
                     <button type="button" onClick={() => setQty(x.key, x.qty - 1)} aria-label={`${t('decrease')}: ${tr(x.name)}`}>
                       <Icon name="minus" size={18} />
                     </button>
-                    <span className="num" aria-live="polite">{x.qty}</span>
+                    <span className="num" aria-live="polite">
+                      {x.qty}
+                    </span>
                     <button type="button" onClick={() => setQty(x.key, x.qty + 1)} aria-label={`${t('increase')}: ${tr(x.name)}`}>
                       <Icon name="plus" size={18} />
                     </button>
@@ -131,7 +119,12 @@ export default function CartDrawer({ open, onClose, cart, setQty, clear, setting
 
             <div className="form">
               <label htmlFor="cart-name">
-                <span className="lbl">{t('your_name')}<span className="req" aria-hidden="true">*</span></span>
+                <span className="lbl">
+                  {t('your_name')}
+                  <span className="req" aria-hidden="true">
+                    *
+                  </span>
+                </span>
               </label>
               <input
                 id="cart-name"
@@ -143,12 +136,26 @@ export default function CartDrawer({ open, onClose, cart, setQty, clear, setting
                 aria-invalid={tried && nameMissing}
                 aria-describedby={tried && nameMissing ? 'name-error' : undefined}
               />
-              {tried && nameMissing && <p id="name-error" className="opt-error" role="alert">{t('name_required')}</p>}
+              {tried && nameMissing && (
+                <p id="name-error" className="opt-error" role="alert">
+                  {t('name_required')}
+                </p>
+              )}
               <div className="seg" role="group" aria-label={`${t('pickup')} / ${t('delivery')}`}>
-                <button type="button" aria-pressed={mode === 'pickup'} className={mode === 'pickup' ? 'active' : ''} onClick={() => setMode('pickup')}>
+                <button
+                  type="button"
+                  aria-pressed={mode === 'pickup'}
+                  className={mode === 'pickup' ? 'active' : ''}
+                  onClick={() => setMode('pickup')}
+                >
                   <Icon name="store" size={18} /> {t('pickup')}
                 </button>
-                <button type="button" aria-pressed={mode === 'delivery'} className={mode === 'delivery' ? 'active' : ''} onClick={() => setMode('delivery')}>
+                <button
+                  type="button"
+                  aria-pressed={mode === 'delivery'}
+                  className={mode === 'delivery' ? 'active' : ''}
+                  onClick={() => setMode('delivery')}
+                >
                   <Icon name="bike" size={18} /> {t('delivery')}
                 </button>
               </div>
@@ -158,23 +165,48 @@ export default function CartDrawer({ open, onClose, cart, setQty, clear, setting
                     <div className="loc-ok" role="status">
                       <Icon name="check" size={18} />
                       <span>
-                        {t('loc_saved')} <span className="muted small">(±{loc.acc} {t('meters')})</span>
+                        {t('loc_saved')}{' '}
+                        <span className="muted small">
+                          (±{loc.acc} {t('meters')})
+                        </span>
                       </span>
-                      <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-link">{t('view_on_map')}</a>
-                      <button type="button" className="btn btn-sm btn-link" onClick={() => setLoc(null)}>{t('remove')}</button>
+                      <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="btn btn-sm btn-link">
+                        {t('view_on_map')}
+                      </a>
+                      <button type="button" className="btn btn-sm btn-link" onClick={() => setLoc(null)}>
+                        {t('remove')}
+                      </button>
                     </div>
                   ) : (
-                    <button type="button" className="btn btn-outline btn-block" onClick={getLocation} disabled={locState === 'loading'} aria-busy={locState === 'loading'}>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-block"
+                      onClick={getLocation}
+                      disabled={locState === 'loading'}
+                      aria-busy={locState === 'loading'}
+                    >
                       <Icon name="navigation" size={18} /> {locState === 'loading' ? t('loc_loading') : t('share_location')}
                     </button>
                   )}
-                  {locState === 'denied' && <p className="opt-error" role="alert">{t('loc_denied')}</p>}
-                  {locState === 'error' && <p className="opt-error" role="alert">{t('loc_error')}</p>}
+                  {locState === 'denied' && (
+                    <p className="opt-error" role="alert">
+                      {t('loc_denied')}
+                    </p>
+                  )}
+                  {locState === 'error' && (
+                    <p className="opt-error" role="alert">
+                      {t('loc_error')}
+                    </p>
+                  )}
 
                   <label htmlFor="cart-address">
                     <span className="lbl">
                       {loc ? t('address_details') : t('address')}
-                      {!loc && <span className="req" aria-hidden="true">*</span>}
+                      {!loc && (
+                        <span className="req" aria-hidden="true">
+                          *
+                        </span>
+                      )}
                     </span>
                   </label>
                   <input
@@ -186,8 +218,16 @@ export default function CartDrawer({ open, onClose, cart, setQty, clear, setting
                     aria-invalid={tried && deliveryMissing}
                     aria-describedby="addr-help"
                   />
-                  <p id="addr-help" className={tried && deliveryMissing ? 'opt-error' : 'muted small'} role={tried && deliveryMissing ? 'alert' : undefined}>
-                    {tried && deliveryMissing ? t('need_location_or_address') : loc ? t('address_details_help') : t('location_or_address_help')}
+                  <p
+                    id="addr-help"
+                    className={tried && deliveryMissing ? 'opt-error' : 'muted small'}
+                    role={tried && deliveryMissing ? 'alert' : undefined}
+                  >
+                    {tried && deliveryMissing
+                      ? t('need_location_or_address')
+                      : loc
+                        ? t('address_details_help')
+                        : t('location_or_address_help')}
                   </p>
                 </div>
               )}
@@ -211,8 +251,12 @@ export default function CartDrawer({ open, onClose, cart, setQty, clear, setting
             >
               <WhatsAppIcon size={22} /> {t('send_order_whatsapp')}
             </a>
-            <p className="muted small center"><Icon name="info" size={14} /> {t('order_by_phone_note')}</p>
-            <button type="button" className="btn btn-link" onClick={clear}><Icon name="trash" size={16} /> {t('clear')}</button>
+            <p className="muted small center">
+              <Icon name="info" size={14} /> {t('order_by_phone_note')}
+            </p>
+            <button type="button" className="btn btn-link" onClick={clear}>
+              <Icon name="trash" size={16} /> {t('clear')}
+            </button>
           </>
         )}
       </aside>

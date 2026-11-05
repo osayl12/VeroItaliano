@@ -5,7 +5,7 @@ import Settings from '../models/Settings.js';
 import { requireAdmin } from '../middleware/auth.js';
 import { imageUpload, removeUpload } from '../middleware/upload.js';
 import { getSettings } from '../utils/settings.js';
-import { withItem } from './public.js';
+import { withItem } from '../utils/deals.js';
 
 const router = Router();
 router.use(requireAdmin);
@@ -26,7 +26,20 @@ function parseBody(req) {
 }
 
 const pick = (obj, keys) => Object.fromEntries(keys.filter((k) => k in obj).map((k) => [k, obj[k]]));
-const MENU_FIELDS = ['name', 'description', 'howMade', 'category', 'price', 'salePrice', 'image', 'active', 'available', 'featured', 'optionGroups', 'order'];
+const MENU_FIELDS = [
+  'name',
+  'description',
+  'howMade',
+  'category',
+  'price',
+  'salePrice',
+  'image',
+  'active',
+  'available',
+  'featured',
+  'optionGroups',
+  'order'
+];
 const DEAL_FIELDS = ['title', 'description', 'image', 'price', 'originalPrice', 'startAt', 'endAt', 'items', 'active'];
 
 // Generic CRUD for menu items and deals
@@ -89,8 +102,17 @@ crud('/deals', Deal, DEAL_FIELDS, { endAt: -1 }, async (list) => {
 
 // Settings: hours, temporary closing, contact info, map
 const SETTINGS_FIELDS = [
-  'hours', 'tempClosed', 'tempClosedMessage', 'phone', 'whatsapp', 'whatsappGreeting',
-  'address', 'mapUrl', 'mapLink', 'instagram', 'tagline'
+  'hours',
+  'tempClosed',
+  'tempClosedMessage',
+  'phone',
+  'whatsapp',
+  'whatsappGreeting',
+  'address',
+  'mapUrl',
+  'mapLink',
+  'instagram',
+  'tagline'
 ];
 
 router.get('/settings', async (req, res, next) => {

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api.js';
 import { useLang } from '../i18n.jsx';
 import { ActsProvider, Act, useActs } from '../evening/acts.jsx';
@@ -8,7 +8,9 @@ import ThePull from '../evening/ThePull.jsx';
 import { LangSwitch } from '../components/Header.jsx';
 import Icon from '../components/Icon.jsx';
 import WhatsAppIcon from '../components/WhatsAppIcon.jsx';
-import { finalPrice, formatPhone, israelNow, money, openStatus, telLink, waLink } from '../utils.js';
+import { applyDealPrices, finalPrice, formatPhone, israelNow, money, openStatus, telLink, waLink } from '../utils.js';
+import { dealEntry, loadCart, saveCart, withEntry } from '../cart.js';
+import { quickOrderText } from '../orderText.js';
 import '../evening/evening.css';
 
 /**
@@ -50,17 +52,25 @@ function EveningRail({ settings, hasDeals }) {
 
   return (
     <nav className="ev-rail" ref={ref} aria-label={t('nav_menu')}>
-      <span className="ev-rail-time num" dir="ltr">{today && !today.closed ? today.open : ''}</span>
+      <span className="ev-rail-time num" dir="ltr">
+        {today && !today.closed ? today.open : ''}
+      </span>
       <div className="ev-rail-line">
         <span className="ev-rail-fill" aria-hidden="true" />
-        <span className="ev-rail-flame" aria-hidden="true"><Icon name="flame" size={16} /></span>
+        <span className="ev-rail-flame" aria-hidden="true">
+          <Icon name="flame" size={16} />
+        </span>
         <ol className="ev-rail-stops">
           {items.map((r) => (
-            <li key={r.id}><a href={`#${r.id}`}>{t(r.key)}</a></li>
+            <li key={r.id}>
+              <a href={`#${r.id}`}>{t(r.key)}</a>
+            </li>
           ))}
         </ol>
       </div>
-      <span className="ev-rail-time num" dir="ltr">{today && !today.closed ? today.close : t('ev_closed_today')}</span>
+      <span className="ev-rail-time num" dir="ltr">
+        {today && !today.closed ? today.close : t('ev_closed_today')}
+      </span>
     </nav>
   );
 }
@@ -98,8 +108,15 @@ function Hero({ settings, layers }) {
           <h1>{t('ev_hero_title')}</h1>
           <p>{tr(settings.tagline)}</p>
           <div className="hp-cta">
-            <Link className="btn btn-red btn-lg" to="/menu"><Icon name="utensils" size={20} /> {t('ev_order_now')}</Link>
-            <a className="btn btn-outline btn-lg" href={telLink(settings.phone)}><Icon name="phone" size={20} /> <span dir="ltr" className="num">{formatPhone(settings.phone)}</span></a>
+            <Link className="btn btn-red btn-lg" to="/menu">
+              <Icon name="utensils" size={20} /> {t('ev_order_now')}
+            </Link>
+            <a className="btn btn-outline btn-lg" href={telLink(settings.phone)}>
+              <Icon name="phone" size={20} />{' '}
+              <span dir="ltr" className="num">
+                {formatPhone(settings.phone)}
+              </span>
+            </a>
           </div>
         </div>
         {/* foreground plane: real pizzas, out of focus, overlapping the lower corners */}
@@ -127,16 +144,25 @@ function Evening() {
   const [error, setError] = useState(false);
   const pullRef = useRef(null);
   const trackRef = useRef(null);
+  const navigate = useNavigate();
 
-  const load = useCallback(() => api.site().then((d) => { setData(d); setError(false); }).catch(() => setError(true)), []);
-  useEffect(() => { load(); }, [load]);
+  const load = useCallback(
+    () =>
+      api
+        .site()
+        .then((d) => {
+          setData(d);
+          setError(false);
+        })
+        .catch(() => setError(true)),
+    []
+  );
+  useEffect(() => {
+    load();
+  }, [load]);
 
   // deal price wins while a deal runs (same rule as /menu)
-  const menu = useMemo(() => {
-    const dp = new Map();
-    for (const d of data?.deals || []) for (const id of d.items || []) dp.set(String(id), Number(d.price));
-    return (data?.menu || []).map((m) => (dp.has(String(m._id)) && dp.get(String(m._id)) < m.price ? { ...m, salePrice: dp.get(String(m._id)) } : m));
-  }, [data]);
+  const menu = useMemo(() => applyDealPrices(data?.menu, data?.deals), [data]);
   const plates = useMemo(
     () => menu.filter((m) => ['pizza', 'focaccia', 'combos'].includes(m.category) && m.image && m.available !== false),
     [menu]
@@ -145,7 +171,12 @@ function Evening() {
     () => menu.find((m) => m.featured && m.image) || plates.find((m) => m.category === 'pizza') || null,
     [menu, plates]
   );
-  const foreLayers = plates.filter((m) => m.category === 'pizza' && m._id !== featured?._id).slice(0, 2).map((m) => m.image);
+  const foreLayers = plates
+    .filter((m) => m.category === 'pizza' && m._id !== featured?._id)
+    .slice(0, 2)
+    .map((m) => m.image);
+  // close-up for the craft chapter: a dish that isn't already the peak or in the hero
+  const craftImage = (plates.find((m) => m._id !== featured?._id && !foreLayers.includes(m.image)) || plates[0])?.image;
 
   // sideways table: how far the track must travel (RTL: content overflows to the left)
   const onPan = useCallback((p) => {
@@ -159,19 +190,37 @@ function Evening() {
     return (
       <div className="center-screen" role="alert">
         <p>{t('load_error')}</p>
-        <button type="button" className="btn btn-green" onClick={load}><Icon name="refresh" size={18} /> {t('retry')}</button>
+        <button type="button" className="btn btn-green" onClick={load}>
+          <Icon name="refresh" size={18} /> {t('retry')}
+        </button>
       </div>
     );
   }
-  if (!data) return <div className="ev-loading" aria-busy="true"><div className="ev-loading-glow" /></div>;
+  if (!data)
+    return (
+      <div className="ev-loading" aria-busy="true">
+        <div className="ev-loading-glow" />
+      </div>
+    );
 
   const { settings, deals } = data;
   const st = openStatus(settings);
   const greeting = tr(settings.whatsappGreeting);
+  // With an order already in the cart, WhatsApp buttons open the order form on /menu instead of an
+  // empty chat. entry = the deal whose own button was pressed: it joins the order.
+  const toOrderForm = (e, entry) => {
+    const cart = loadCart();
+    if (!cart.length) return;
+    e.preventDefault();
+    if (entry) saveCart(withEntry(cart, entry));
+    navigate('/menu?cart=1');
+  };
 
   return (
     <div className="evening">
-      <a href="#main" className="skip-link">{t('skip_to_content')}</a>
+      <a href="#main" className="skip-link">
+        {t('skip_to_content')}
+      </a>
       <header className="ev-top">
         <Link to="/" className="ev-brand" aria-label="Vero Italiano">
           <picture>
@@ -182,7 +231,9 @@ function Evening() {
         <EveningRail settings={settings} hasDeals={deals.length > 0} />
         <div className="ev-top-actions">
           <LangSwitch />
-          <Link to="/menu" className="btn btn-sm btn-outline ev-menu-link"><Icon name="utensils" size={16} /> {t('ev_full_menu')}</Link>
+          <Link to="/menu" className="btn btn-sm btn-outline ev-menu-link">
+            <Icon name="utensils" size={16} /> {t('ev_full_menu')}
+          </Link>
         </div>
       </header>
 
@@ -193,14 +244,14 @@ function Evening() {
         {/* 2. CRAFT – macro zoom + lines that assemble (real facts from his menu) */}
         <Act id="craft" span={1.6} label={t('ev_rail_craft')}>
           <div className="craft">
-            <div className="craft-img">
-              {plates[0] && <img src={(menu.find((m) => m.name.he.includes('סטלה')) || plates[0]).image} alt="" />}
-            </div>
+            <div className="craft-img">{craftImage && <img src={craftImage} alt="" />}</div>
             <div className="craft-copy">
               <h2>{t('ev_craft_title')}</h2>
               <ul>
                 {['ev_craft_1', 'ev_craft_2', 'ev_craft_3'].map((k, i) => (
-                  <li key={k} style={{ '--i': i }}>{t(k)}</li>
+                  <li key={k} style={{ '--i': i }}>
+                    {t(k)}
+                  </li>
                 ))}
               </ul>
             </div>
@@ -216,7 +267,9 @@ function Evening() {
                 {plates.map((m) => (
                   <li key={m._id}>
                     <Link to={`/menu?item=${m._id}`} className="plate">
-                      <span className="plate-img"><img src={m.image} alt="" loading="lazy" decoding="async" /></span>
+                      <span className="plate-img">
+                        <img src={m.image} alt="" loading="lazy" decoding="async" />
+                      </span>
                       <span className="plate-name">{tr(m.name)}</span>
                       <span className="plate-price num">{money(finalPrice(m))}</span>
                     </Link>
@@ -237,7 +290,16 @@ function Evening() {
 
         {/* 5. THE PULL – peak, largest span */}
         {featured && (
-          <Act id="pull" span={2.6} reducedValue={0.62} label={t('ev_rail_pull')} onProgress={(p, v) => { pullRef.current?.draw(p, v); document.getElementById('pull')?.classList.toggle('is-done', p > 0.8); }}>
+          <Act
+            id="pull"
+            span={2.6}
+            reducedValue={0.62}
+            label={t('ev_rail_pull')}
+            onProgress={(p, v) => {
+              pullRef.current?.draw(p, v);
+              document.getElementById('pull')?.classList.toggle('is-done', p > 0.8);
+            }}
+          >
             <div className="pull">
               <div className="pull-stage">
                 <ThePull ref={pullRef} src={featured.image} alt={tr(featured.name)} staticProgress={reduced ? 0.62 : 0} />
@@ -247,7 +309,9 @@ function Evening() {
                 <div className="pull-end">
                   <p className="pull-name">{tr(featured.name)}</p>
                   <p className="pull-price num">{money(finalPrice(featured))}</p>
-                  <Link to={`/menu?item=${featured._id}`} className="btn btn-red btn-lg">{t('ev_pull_want')}</Link>
+                  <Link to={`/menu?item=${featured._id}`} className="btn btn-red btn-lg">
+                    {t('ev_pull_want')}
+                  </Link>
                 </div>
               </div>
             </div>
@@ -262,7 +326,11 @@ function Evening() {
               <ul>
                 {deals.slice(0, 3).map((d, i) => (
                   <li key={d._id} style={{ '--i': i }}>
-                    <a className="ev-deal" href={d.item ? `/menu?item=${d.item._id}` : waLink(settings.whatsapp, `${greeting}\n• ${tr(d.title)} (${money(d.price)})`)} {...(d.item ? {} : { target: '_blank', rel: 'noopener noreferrer' })}>
+                    <a
+                      className="ev-deal"
+                      href={d.item ? `/menu?item=${d.item._id}` : waLink(settings.whatsapp, quickOrderText(greeting, tr(d.title), d.price))}
+                      {...(d.item ? {} : { target: '_blank', rel: 'noopener noreferrer', onClick: (e) => toOrderForm(e, dealEntry(d)) })}
+                    >
                       {d.image && <img src={d.image} alt="" loading="lazy" />}
                       <span className="ev-deal-title">{tr(d.title)}</span>
                       <span className="ev-deal-price num">{money(d.price)}</span>
@@ -282,30 +350,67 @@ function Evening() {
               {st.temp
                 ? t('temp_closed')
                 : st.open
-                  ? t('ev_close_open').replace('{t}', st.closesAt)
+                  ? t('ev_close_open', { t: st.closesAt })
                   : st.opensAt
-                    ? t('ev_close_closed').replace('{t}', st.opensAt)
+                    ? t('ev_close_closed', { t: st.opensAt })
                     : t('closed_now')}
             </h2>
             <p>{st.temp ? tr(settings.tempClosedMessage) : t('ev_close_sub')}</p>
             <div className="lc-cta">
-              <a className="btn btn-red btn-lg" href={telLink(settings.phone)}><Icon name="phone" size={20} /> {t('call_to_order')}</a>
-              <a className="btn btn-wa btn-lg" href={waLink(settings.whatsapp, greeting)} target="_blank" rel="noopener noreferrer"><WhatsAppIcon size={22} /> {t('order_whatsapp')}</a>
-              <Link className="btn btn-outline btn-lg" to="/menu"><Icon name="utensils" size={20} /> {t('ev_full_menu')}</Link>
+              <a className="btn btn-red btn-lg" href={telLink(settings.phone)}>
+                <Icon name="phone" size={20} /> {t('call_to_order')}
+              </a>
+              <a
+                className="btn btn-wa btn-lg"
+                href={waLink(settings.whatsapp, greeting)}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={toOrderForm}
+              >
+                <WhatsAppIcon size={22} /> {t('order_whatsapp')}
+              </a>
+              <Link className="btn btn-outline btn-lg" to="/menu">
+                <Icon name="utensils" size={20} /> {t('ev_full_menu')}
+              </Link>
             </div>
             <p className="lc-meta">
-              {tr(settings.address) && <span><Icon name="pin" size={16} /> {tr(settings.address)}</span>}
-              <a href={telLink(settings.phone)} dir="ltr" className="num">{formatPhone(settings.phone)}</a>
-              {settings.instagram && <a href={settings.instagram} target="_blank" rel="noopener noreferrer"><Icon name="instagram" size={16} /> {t('instagram')}</a>}
+              {tr(settings.address) && (
+                <span>
+                  <Icon name="pin" size={16} /> {tr(settings.address)}
+                </span>
+              )}
+              <a href={telLink(settings.phone)} dir="ltr" className="num">
+                {formatPhone(settings.phone)}
+              </a>
+              {settings.instagram && (
+                <a href={settings.instagram} target="_blank" rel="noopener noreferrer">
+                  <Icon name="instagram" size={16} /> {t('instagram')}
+                </a>
+              )}
             </p>
           </div>
         </section>
       </main>
 
       <nav className="mobile-bar" aria-label={t('call_to_order')}>
-        <a href={telLink(settings.phone)} className="mb-btn mb-call"><Icon name="phone" size={22} /><span>{t('call')}</span></a>
-        <a href={waLink(settings.whatsapp, greeting)} target="_blank" rel="noopener noreferrer" className="mb-btn mb-wa"><WhatsAppIcon size={22} /><span>{t('whatsapp')}</span></a>
-        <Link to="/menu" className="mb-btn"><Icon name="utensils" size={22} /><span>{t('nav_menu')}</span></Link>
+        <a href={telLink(settings.phone)} className="mb-btn mb-call">
+          <Icon name="phone" size={22} />
+          <span>{t('call')}</span>
+        </a>
+        <a
+          href={waLink(settings.whatsapp, greeting)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mb-btn mb-wa"
+          onClick={toOrderForm}
+        >
+          <WhatsAppIcon size={22} />
+          <span>{t('whatsapp')}</span>
+        </a>
+        <Link to="/menu" className="mb-btn">
+          <Icon name="utensils" size={22} />
+          <span>{t('nav_menu')}</span>
+        </Link>
       </nav>
     </div>
   );

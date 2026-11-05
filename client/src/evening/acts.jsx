@@ -8,8 +8,7 @@ import { createContext, useContext, useEffect, useRef, useState } from 'react';
  */
 const Ctx = createContext(null);
 
-export const prefersReducedMotion = () =>
-  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+export const prefersReducedMotion = () => typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 
 export function ActsProvider({ children }) {
   const acts = useRef(new Set());
@@ -46,6 +45,8 @@ export function ActsProvider({ children }) {
       cancelAnimationFrame(raf.current);
       raf.current = 0; // must reset, or request() thinks a frame is still pending and never runs again
     };
+    // subscribe once: request/tick only read refs, so a newer copy of them would behave the same
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const api = {
@@ -81,7 +82,14 @@ export function Act({ id, span = 1, className = '', label, onProgress, reducedVa
 
   const height = ctx.reduced ? 'auto' : `${span * 100}vh`;
   return (
-    <section id={id} ref={ref} className={`act act-${id} ${ctx.reduced ? 'is-static' : ''} ${className}`} style={{ height }} aria-label={label} {...rest}>
+    <section
+      id={id}
+      ref={ref}
+      className={`act act-${id} ${ctx.reduced ? 'is-static' : ''} ${className}`}
+      style={{ height }}
+      aria-label={label}
+      {...rest}
+    >
       <div className="act-stage">{children}</div>
     </section>
   );

@@ -8,18 +8,15 @@ export default function Logo({ small = false }) {
       {hasImage ? (
         <picture>
           <source srcSet="/logo.webp" type="image/webp" />
-          <img
-            src="/logo.png"
-            alt="Vero Italiano"
-            width="720"
-            height="638"
-            decoding="async"
-            onError={() => setHasImage(false)}
-          />
+          <img src="/logo.png" alt="Vero Italiano" width="720" height="638" decoding="async" onError={() => setHasImage(false)} />
         </picture>
       ) : (
         <span className="logo-text">
-          <span className="logo-flag" aria-hidden="true"><i /><i /><i /></span>
+          <span className="logo-flag" aria-hidden="true">
+            <i />
+            <i />
+            <i />
+          </span>
           Vero Italiano
         </span>
       )}

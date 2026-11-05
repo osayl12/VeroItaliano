@@ -140,7 +140,13 @@ const dict = {
     cat_drinks: 'שתייה',
     cat_desserts: 'קינוחים',
     // days (0 = Sunday)
-    day_0: 'ראשון', day_1: 'שני', day_2: 'שלישי', day_3: 'רביעי', day_4: 'חמישי', day_5: 'שישי', day_6: 'שבת',
+    day_0: 'ראשון',
+    day_1: 'שני',
+    day_2: 'שלישי',
+    day_3: 'רביעי',
+    day_4: 'חמישי',
+    day_5: 'שישי',
+    day_6: 'שבת',
     // admin
     admin_panel: 'פאנל ניהול',
     login: 'כניסה',
@@ -183,7 +189,7 @@ const dict = {
     dur_days: 'ימים',
     dur_until: 'עד תאריך',
     end_at: 'סיום',
-    linked_items: 'פריטים במבצע (יקבלו תג "במבצע")',
+    linked_items: 'הפריט במבצע (יקבל תג "במבצע")',
     status: 'סטטוס',
     st_scheduled: 'מתוכנן',
     st_active: 'פעיל',
@@ -217,7 +223,8 @@ const dict = {
   },
   ar: {
     add_and_send_whatsapp: 'أضف وأرسل الطلب عبر واتساب',
-    deal_link_help: 'اختاروا صنفًا من القائمة: الاسم والوصف والصورة والخيارات تؤخذ منه تلقائيًا. خلال العرض يظهر الصنف في القائمة بسعر العرض.',
+    deal_link_help:
+      'اختاروا صنفًا من القائمة: الاسم والوصف والصورة والخيارات تؤخذ منه تلقائيًا. خلال العرض يظهر الصنف في القائمة بسعر العرض.',
     deal_inherits: 'الاسم والوصف والصورة تؤخذ من الصنف. املؤوا في الأسفل فقط إذا أردتم شيئًا مختلفًا.',
     optional: 'اختياري',
     ev_rail_fire: 'النار',
@@ -350,7 +357,13 @@ const dict = {
     cat_breads: 'مخبوزات',
     cat_drinks: 'مشروبات',
     cat_desserts: 'حلويات',
-    day_0: 'الأحد', day_1: 'الاثنين', day_2: 'الثلاثاء', day_3: 'الأربعاء', day_4: 'الخميس', day_5: 'الجمعة', day_6: 'السبت',
+    day_0: 'الأحد',
+    day_1: 'الاثنين',
+    day_2: 'الثلاثاء',
+    day_3: 'الأربعاء',
+    day_4: 'الخميس',
+    day_5: 'الجمعة',
+    day_6: 'السبت',
     admin_panel: 'لوحة التحكم',
     login: 'دخول',
     logout: 'خروج',
@@ -392,7 +405,7 @@ const dict = {
     dur_days: 'أيام',
     dur_until: 'حتى تاريخ',
     end_at: 'النهاية',
-    linked_items: 'أصناف ضمن العرض (ستظهر عليها علامة "عرض")',
+    linked_items: 'الصنف ضمن العرض (ستظهر عليه علامة "عرض")',
     status: 'الحالة',
     st_scheduled: 'مجدول',
     st_active: 'فعّال',
@@ -448,7 +461,12 @@ export function LangProvider({ children }) {
     } catch {}
   }, [lang]);
 
-  const t = (key) => dict[lang][key] ?? dict.he[key] ?? key;
+  // t('up_to', { n: 3 }) fills "{n}" in the text
+  const t = (key, vars) => {
+    let s = dict[lang][key] ?? dict.he[key] ?? key;
+    if (vars) for (const [k, v] of Object.entries(vars)) s = s.replaceAll(`{${k}}`, v);
+    return s;
+  };
   // pick the right language from a { he, ar } object, falling back to the other one
   const tr = (obj) => (obj ? obj[lang] || obj.he || obj.ar || '' : '');
 
