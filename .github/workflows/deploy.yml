@@ -71,11 +71,14 @@ jobs:
         run: |
           install -m 700 -d ~/.ssh
           printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
-          # pin the server key: take only "ssh-ed25519 AAAA..." from the secret and pair it with SSH_HOST,
-          # so the secret works whether or not it starts with a host name / IP
+          # tolerate pasted extras in the secrets: spaces, new lines, a "SSH_HOST:" label, "user@"
+          HOST=$(printf '%s' "$SSH_HOST" | tr -d '\r' | tr -s ' \n\t' '\n' | grep -v ':$' | tail -1 | sed 's/.*@//')
+          USER_=$(printf '%s' "$SSH_USER" | tr -d '\r' | tr -s ' \n\t' '\n' | grep -v ':$' | tail -1)
+          if [ -z "$HOST" ] || [ -z "$USER_" ]; then echo "::error::SSH_HOST or SSH_USER is empty"; exit 1; fi
+          # pin the server key under a fixed alias, so the check doesn't depend on how SSH_HOST is written
           HOSTKEY=$(printf '%s\n' "$SSH_KNOWN_HOSTS" | grep -oE 'ssh-ed25519 [A-Za-z0-9+/=]+' | head -1)
           if [ -z "$HOSTKEY" ]; then echo "::error::SSH_KNOWN_HOSTS has no ssh-ed25519 key"; exit 1; fi
-          printf '%s %s\n' "$SSH_HOST" "$HOSTKEY" > ~/.ssh/known_hosts
-          # the server's forced command does the update; StrictHostKeyChecking=yes refuses an unknown host
-          ssh -T -i ~/.ssh/deploy_key -o StrictHostKeyChecking=yes -o BatchMode=yes "$SSH_USER@$SSH_HOST"
+          printf 'vero-server %s\n' "$HOSTKEY" > ~/.ssh/known_hosts
+          # the server's forced command does the update; StrictHostKeyChecking=yes refuses any other key
+          ssh -T -i ~/.ssh/deploy_key -o HostKeyAlias=vero-server -o StrictHostKeyChecking=yes -o BatchMode=yes "$USER_@$HOST"
           rm -f ~/.ssh/deploy_key
